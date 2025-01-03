@@ -11,9 +11,13 @@ namespace ZenSevenUpdater
     {
         private bool _isActionRunning = false;
 
+        private readonly AppSettings _appSettings = new AppSettings().Load();
+
         public MainWindow()
         {
             InitializeComponent();
+
+            DataContext = _appSettings;
 
             DismHelper.SetLogAction(Log);
             IsoHelper.SetLogAction(Log);
@@ -56,6 +60,7 @@ namespace ZenSevenUpdater
                 var isoPath = TextBoxIsoPath.Text;
                 var workingDirectory = TextBoxWorkingDirectory.Text;
                 var installWimPath = $"{workingDirectory}\\iso\\sources\\install.wim";
+                var isoLabel = TextBoxIsoLabel.Text;
 
                 CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(isoPath, $"{workingDirectory}\\iso", ct));
 
@@ -68,7 +73,7 @@ namespace ZenSevenUpdater
                 CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, $"{workingDirectory}\\mount", "1", ct));
                 CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync($"{workingDirectory}\\mount", true, ct));
 
-                CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync($"{workingDirectory}\\iso", $"{workingDirectory}\\output.iso", ct));
+                CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync($"{workingDirectory}\\iso", $"{workingDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
             };
 
             ButtonCancel.Click += (s, e) =>
@@ -76,26 +81,13 @@ namespace ZenSevenUpdater
                 CommandQueue.CancelQueue();
 
                 var workingDirectory = TextBoxWorkingDirectory.Text;
-                if (Directory.Exists($"{workingDirectory}\\mount") && Directory.GetFiles($"{workingDirectory}\\mount").Length == 0)
+                if (!FileUtils.IsDirectoryEmpty($"{workingDirectory}\\mount"))
                 {
                     CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync($"{workingDirectory}\\mount", false, ct));
                 }
             };
 
             Log("Ready.");
-
-            /*
-             * Button cancelQueueButton = new Button { Content = "Cancel Queue", Margin = new Thickness(10) };
-    cancelQueueButton.Click += (s, e) => CommandQueue.CancelQueue();
-
-    mountButton.Click += (s, e) => CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync("C:\\path\\to\\image.wim", "C:\\mount\\directory", "1", ct));
-    unmountButton.Click += (s, e) => CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync("C:\\mount\\directory", true, ct));
-    deleteButton.Click += (s, e) => CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync("C:\\path\\to\\image.wim", ct));
-    addDriverButton.Click += (s, e) => CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync("C:\\mount\\directory", "C:\\path\\to\\driver", true, ct));
-
-    buttonPanel.Children.Add(cancelQueueButton);
-
-            */
         }
         private void SetButtonsEnabled(bool isEnabled)
         {
@@ -103,6 +95,7 @@ namespace ZenSevenUpdater
             ButtonBrowse.IsEnabled = isEnabled;
             ButtonBrowseWin10.IsEnabled = isEnabled;
             ButtonStart.IsEnabled = isEnabled;
+            TextBoxIsoLabel.IsEnabled = isEnabled;
         }
 
         private void SelectFile(string filter, Action<string> onFileSelected)
@@ -149,8 +142,14 @@ namespace ZenSevenUpdater
             Dispatcher.Invoke(() =>
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                TextBoxLog.AppendText($"[{timestamp}] {message}" + Environment.NewLine);
+                string text = $"[{timestamp}] {message}{Environment.NewLine}";
+                TextBoxLog.AppendText(text);
                 TextBoxLog.ScrollToEnd();
+
+                // Log to output.log file in the working directory
+                var workingDirectory = TextBoxWorkingDirectory.Text;
+                var logFilePath = Path.Combine(workingDirectory, "output.log");
+                File.AppendAllText(logFilePath, text);
             });
         }
     }

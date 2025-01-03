@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using static ZenSevenUpdater.DismHelper;
 
 namespace ZenSevenUpdater
@@ -56,6 +57,28 @@ namespace ZenSevenUpdater
         {
             DriveInfo drive = new DriveInfo(Path.GetPathRoot(path));
             return drive.AvailableFreeSpace >= requiredBytes;
+        }
+
+        public static void DeleteDirectory(string path)
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+        }
+
+        public static bool IsDirectoryEmpty(string path)
+        {
+            return Directory.GetFileSystemEntries(path).Length == 0;
+        }
+
+        public static async Task CleanupWorkingDirectory(string path)
+        {
+            await Task.Run(() =>
+            {
+
+                DeleteDirectory(path);
+            });
         }
     }
 }

@@ -91,6 +91,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="AppSettings.cs" />
     <Compile Include="CommandQueue.cs" />
     <None Include="CommandQueue.cs-" />
     <Compile Include="DismHelper.cs" />

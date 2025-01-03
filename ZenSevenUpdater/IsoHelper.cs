@@ -53,7 +53,7 @@ namespace ZenSevenUpdater
             Log("ISO extraction completed successfully.");
         }
 
-        public static async Task CreateBootableIsoFromDirectoryAsync(string sourceDirectory, string outputIsoPath, CancellationToken cancellationToken)
+        public static async Task CreateBootableIsoFromDirectoryAsync(string sourceDirectory, string outputIsoPath, string label, CancellationToken cancellationToken)
         {
             if (!Directory.Exists(sourceDirectory))
             {
@@ -67,7 +67,7 @@ namespace ZenSevenUpdater
                 CDBuilder builder = new CDBuilder
                 {
                     UseJoliet = true,
-                    VolumeIdentifier = "BOOTABLEISO"
+                    VolumeIdentifier = $@"{label}"
                 };
 
                 await AddFilesToIsoAsync(builder, sourceDirectory, string.Empty, cancellationToken);
