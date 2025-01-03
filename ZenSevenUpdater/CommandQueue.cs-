@@ -1,0 +1,62 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ZenSevenUpdater
+{
+    public static class CommandQueue
+    {
+        private static BlockingCollection<Func<CancellationToken, Task>> _commandQueue = new BlockingCollection<Func<CancellationToken, Task>>();
+        private static CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        public static event Action OnQueueCompleted; // Event for queue completion
+
+        static CommandQueue()
+        {
+            Task.Run(() => ProcessQueue(_cancellationTokenSource.Token));
+        }
+
+        public static void EnqueueCommand(Func<CancellationToken, Task> command)
+        {
+            _commandQueue.Add(command);
+        }
+
+        public static void CancelQueue()
+        {
+            _cancellationTokenSource.Cancel();
+            Clear(); // Empty the queue on cancel
+            _cancellationTokenSource = new CancellationTokenSource(); // Reset for future use
+            DismHelper.Log("Queue canceled.");
+        }
+
+        private static void Clear()
+        {
+            _commandQueue = new BlockingCollection<Func<CancellationToken, Task>>();
+        }
+
+        private static async Task ProcessQueue(CancellationToken cancellationToken)
+        {
+            foreach (var command in _commandQueue.GetConsumingEnumerable())
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        DismHelper.Log("Queue processing canceled.");
+                        Clear(); // Empty the queue on cancel
+                        OnQueueCompleted?.Invoke();
+                        break;
+                    }
+                    await command(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    DismHelper.Log($"Error executing command: {ex.Message}");
+                    CancelQueue();
+                    break;
+                }
+            }
+            OnQueueCompleted?.Invoke(); // Invoke event when processing is complete
+        }
+    }
+}

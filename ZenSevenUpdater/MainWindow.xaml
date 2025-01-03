@@ -1,0 +1,81 @@
+﻿<adonisControls:AdonisWindow x:Class="ZenSevenUpdater.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:adonisControls="clr-namespace:AdonisUI.Controls;assembly=AdonisUI"
+        xmlns:adonisExtensions="clr-namespace:AdonisUI.Extensions;assembly=AdonisUI"
+        xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
+        xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
+        adonisExtensions:CursorSpotlightExtension.RelativeSpotlightSize="0"
+        xmlns:local="clr-namespace:ZenSevenUpdater"
+        mc:Ignorable="d"
+        BorderThickness="1"
+        BorderBrush="{DynamicResource WindowBorderColor}"
+        Style="{DynamicResource WindowStyles}"
+        UseLayoutRounding="True"
+        SizeToContent="Width"
+        Title="Zen Seven Updater" Height="450" Width="800">
+    <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="10">
+        <StackPanel Orientation="Horizontal">
+            <Grid Width="300">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                    <ColumnDefinition Width="auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="auto"></RowDefinition>
+                    <RowDefinition  Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
+                    <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                    <Label x:Name="LabelIsoPath" Content="Windows 7 ISO Path" Margin="5" />
+                </StackPanel>
+                <TextBox x:Name="TextBoxIsoPath" Grid.Column="0" Grid.Row="1" IsReadOnly="True" Margin="5" />
+                <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5" />
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
+                    <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                    <Label x:Name="LabelWin10IsoPath" Content="Windows 10 ISO Path" Margin="5" />
+                </StackPanel>
+                <TextBox x:Name="TextBoxWin10IsoPath" Grid.Column="0" Grid.Row="3" IsReadOnly="True" Margin="5" />
+                <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5" />
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4">
+                    <materialIcons:MaterialIcon Kind="Folder" Height="20" Margin="5 0 0 0" />
+                    <Label x:Name="LabelWorkingDirectory" Content="Working Directory" Margin="5" />
+                </StackPanel>
+                <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" IsReadOnly="True" Margin="5" Text="C:\AM5" />
+                <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5" />
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
+                    <materialIcons:MaterialIcon Kind="DeveloperBoard" Height="20" Margin="5 0 0 0" />
+                    <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" />
+                </StackPanel>
+                <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5" Grid.ColumnSpan="2">
+                    <ComboBoxItem Content="AMD_Ryzen_Drivers_S7_Win7_64_SHA256_G" IsSelected="True"/>
+                    <ComboBoxItem Content="AMD_Ryzen_Drivers_ASUS_Win7_64_SHA256_G" />
+                </ComboBox>
+
+                <Grid VerticalAlignment="Bottom" Grid.Column="0" Grid.Row="8" Grid.ColumnSpan="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ButtonCancel" Content="Cancel" Margin="5" Grid.Column="1" MinWidth="60" />
+                    <Button x:Name="ButtonStart" Content="Start" Margin="5" Grid.Column="2" MinWidth="60" Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}" />
+                </Grid>
+            </Grid>
+            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" IsReadOnly="True" HorizontalContentAlignment="Left"/>
+        </StackPanel>
+    </Border>
+</adonisControls:AdonisWindow>
