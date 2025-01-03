@@ -126,13 +126,15 @@ namespace ZenSevenUpdater
             }
         }
 
-        public static void MountImage(string imagePath, string mountPath, string index)
+        public static void MountImage(string imagePath, string mountPath, string index, bool optimize)
         {
             if (!Directory.Exists(mountPath))
             {
                 Directory.CreateDirectory(mountPath);
             }
-            string arguments = $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\"";
+
+            string optimizeOption = optimize ? "/Optimize" : string.Empty;
+            string arguments = $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\" {optimizeOption}".Trim();
             ExecuteDismCommand(arguments, "Mount Image");
         }
 
@@ -152,17 +154,17 @@ namespace ZenSevenUpdater
         public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
         {
             string recurseOption = recurse ? "/Recurse" : string.Empty;
-            string arguments = $"/Add-Driver /Image:\"{imagePath}\" /Driver:\"{driverPath}\" {recurseOption}";
+            string arguments = $"/Add-Driver /Image:\"{imagePath}\" /Driver:\"{driverPath}\" {recurseOption} /forceunsigned";
             ExecuteDismCommand(arguments, "Add Driver");
         }
 
-        public static async Task MountImageAsync(string imagePath, string mountPath, string index, CancellationToken cancellationToken)
+        public static async Task MountImageAsync(string imagePath, string mountPath, string index, bool optimize, CancellationToken cancellationToken)
         {
             await Task.Run(() =>
             {
                 if (!cancellationToken.IsCancellationRequested)
                 {
-                    MountImage(imagePath, mountPath, index);
+                    MountImage(imagePath, mountPath, index, optimize);
                 }
             }, cancellationToken);
         }

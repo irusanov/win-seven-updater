@@ -1,6 +1,8 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Windows;
+using ZenSevenUpdater.Properties;
 
 namespace ZenSevenUpdater
 {
@@ -13,81 +15,138 @@ namespace ZenSevenUpdater
 
         private readonly AppSettings _appSettings = new AppSettings().Load();
 
+        private class CustomComboBoxItem
+        {
+            public string Label { get; set; }
+            public string FullPath { get; set; }
+        }
+
         public MainWindow()
         {
-            InitializeComponent();
-
-            DataContext = _appSettings;
-
-            DismHelper.SetLogAction(Log);
-            IsoHelper.SetLogAction(Log);
-
-            ButtonBrowseWorkingDirectory.Click += (s, e) => ExecuteSafe(() => SelectDirectory(path =>
+            try
             {
-                long requiredBytes = 30L * 1024 * 1024 * 1024; // 30GB
-                if (FileUtils.CheckDiskSpace(path, requiredBytes))
+                InitializeComponent();
+
+                DataContext = _appSettings;
+
+                DismHelper.SetLogAction(Log);
+                IsoHelper.SetLogAction(Log);
+
+                ButtonBrowseWorkingDirectory.Click += (s, e) => ExecuteSafe(() => SelectDirectory(path =>
                 {
-                    Log("Sufficient disk space available.");
-                    TextBoxWorkingDirectory.Text = path;
-                }
-                else
+                    long requiredBytes = 30L * 1024 * 1024 * 1024; // 30GB
+                    if (FileUtils.CheckDiskSpace(path, requiredBytes))
+                    {
+                        Log("Sufficient disk space available.");
+                        _appSettings.WorkingDirectory = path;
+                    }
+                    else
+                    {
+                        Log("Insufficient disk space. At least 30GB is required.");
+                    }
+                }));
+
+                ButtonBrowse.Click += (s, e) => ExecuteSafe(() => SelectFile("ISO Files (*.iso)|*.iso", path =>
                 {
-                    Log("Insufficient disk space. At least 30GB is required.");
-                }
-            }));
+                    _appSettings.Windows7IsoPath = path;
+                    //DismHelper.CalculateChecksum(path, DismHelper.ChecksumAlgorithm.MD5);
+                }));
 
-            ButtonBrowse.Click += (s, e) => ExecuteSafe(() => SelectFile("ISO Files (*.iso)|*.iso", path =>
-            {
-                TextBoxIsoPath.Text = path;
-                //DismHelper.CalculateChecksum(path, DismHelper.ChecksumAlgorithm.MD5);
-            }));
+                ButtonBrowseWin10.Click += (s, e) => ExecuteSafe(() => SelectFile("ISO Files (*.iso)|*.iso", path => _appSettings.Windows10IsoPath = path));
 
-            ButtonBrowseWin10.Click += (s, e) => ExecuteSafe(() => SelectFile("ISO Files (*.iso)|*.iso", path => TextBoxWin10IsoPath.Text = path));
-
-            CommandQueue.OnQueueCompleted += () =>
-            {
-                _isActionRunning = false;
-                SetButtonsEnabled(true);
-            };
-
-            ButtonStart.Click += (s, e) =>
-            {
-                if (_isActionRunning) return;
-
-                _isActionRunning = true;
-                SetButtonsEnabled(false);
-
-                var isoPath = TextBoxIsoPath.Text;
-                var workingDirectory = TextBoxWorkingDirectory.Text;
-                var installWimPath = $"{workingDirectory}\\iso\\sources\\install.wim";
-                var isoLabel = TextBoxIsoLabel.Text;
-
-                CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(isoPath, $"{workingDirectory}\\iso", ct));
-
-                CommandQueue.EnqueueCommand(ct => DismHelper.GetWimInfoAsync(installWimPath, ct));
-
-                CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-                CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-                CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-
-                CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, $"{workingDirectory}\\mount", "1", ct));
-                CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync($"{workingDirectory}\\mount", true, ct));
-
-                CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync($"{workingDirectory}\\iso", $"{workingDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
-            };
-
-            ButtonCancel.Click += (s, e) =>
-            {
-                CommandQueue.CancelQueue();
-
-                var workingDirectory = TextBoxWorkingDirectory.Text;
-                if (!FileUtils.IsDirectoryEmpty($"{workingDirectory}\\mount"))
+                CommandQueue.OnQueueCompleted += () =>
                 {
-                    CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync($"{workingDirectory}\\mount", false, ct));
-                }
-            };
+                    _isActionRunning = false;
+                    SetButtonsEnabled(true);
+                };
 
-            Log("Ready.");
+                ButtonStart.Click += (s, e) =>
+                {
+                    if (_isActionRunning) return;
+
+                    _isActionRunning = true;
+                    SetButtonsEnabled(false);
+
+                    var win7IsoPath = _appSettings.Windows7IsoPath;
+                    var win10IsoPath = _appSettings.Windows10IsoPath;
+                    var workingDirectory = _appSettings.WorkingDirectory;
+                    var win7WorkingDirectory = $"{workingDirectory}\\win7";
+                    var win10WorkingDirectory = $"{workingDirectory}\\win10";
+                    var installWimPath = $"{win7WorkingDirectory}\\sources\\install.wim";
+                    var mountDirectory = $"{workingDirectory}\\mount";
+                    var isoLabel = _appSettings.IsoLabel;
+
+                    var driversPath = (ComboBoxDriversDirectory.SelectedItem as CustomComboBoxItem)?.FullPath ?? "";
+
+                    CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers"));
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
+
+                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
+                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
+
+                    CommandQueue.EnqueueCommand(ct => DismHelper.GetWimInfoAsync(installWimPath, ct));
+
+                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
+                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
+                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
+
+                    CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", true, ct));
+                    CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
+                    CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, true, ct));
+
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources\\install.wim"));
+
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
+
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync(win10WorkingDirectory, $"{workingDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
+                };
+
+                ButtonCancel.Click += (s, e) =>
+                {
+                    CommandQueue.CancelQueue();
+
+                    var workingDirectory = _appSettings.WorkingDirectory;
+                    var mountDirectory = $"{workingDirectory}\\mount";
+                    if (!FileUtils.IsDirectoryEmpty(mountDirectory))
+                    {
+                        CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, false, ct));
+                    }
+                };
+
+                ButtonCleanup.Click += (s, e) =>
+                {
+                    SetButtonsEnabled(false);
+
+                    var workingDirectory = _appSettings.WorkingDirectory;
+                    var mountDirectory = $"{workingDirectory}\\mount";
+                    if (!FileUtils.IsDirectoryEmpty(mountDirectory))
+                    {
+                        CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, false, ct));
+                    }
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(workingDirectory));
+                };
+
+                // Drivers combobox
+                var drivers = FileUtils.GetArchiveFiles(Path.Combine(Directory.GetCurrentDirectory(), "drivers"));
+                foreach (string driver in drivers)
+                {
+                    var driverLabel = Path.GetFileNameWithoutExtension(driver);
+                    ComboBoxDriversDirectory.Items.Add(new CustomComboBoxItem { Label = driverLabel, FullPath = driver });
+                    if (_appSettings.Drivers.Equals(driverLabel))
+                    {
+                        ComboBoxDriversDirectory.SelectedIndex = ComboBoxDriversDirectory.Items.Count - 1;
+                    }
+                }
+                ComboBoxDriversDirectory.DisplayMemberPath = "Label";
+
+                Log("Ready.");
+            }
+            catch (Exception ex)
+            {
+                HandleError(ex.Message);
+                ExitApplication();
+            }
         }
         private void SetButtonsEnabled(bool isEnabled)
         {
@@ -95,7 +154,12 @@ namespace ZenSevenUpdater
             ButtonBrowse.IsEnabled = isEnabled;
             ButtonBrowseWin10.IsEnabled = isEnabled;
             ButtonStart.IsEnabled = isEnabled;
+            ButtonCleanup.IsEnabled = isEnabled;
             TextBoxIsoLabel.IsEnabled = isEnabled;
+            ComboBoxDriversDirectory.IsEnabled = isEnabled;
+            TextBoxIsoLabel.IsEnabled = isEnabled;
+            TextBoxWindows7IsoPath.IsEnabled = isEnabled;
+            TextBoxWindows10IsoPath.IsEnabled = isEnabled;
         }
 
         private void SelectFile(string filter, Action<string> onFileSelected)
@@ -147,10 +211,49 @@ namespace ZenSevenUpdater
                 TextBoxLog.ScrollToEnd();
 
                 // Log to output.log file in the working directory
-                var workingDirectory = TextBoxWorkingDirectory.Text;
+                var workingDirectory = _appSettings.WorkingDirectory;
+                if (!Directory.Exists(workingDirectory))
+                {
+                    workingDirectory = Directory.GetCurrentDirectory();
+                }
                 var logFilePath = Path.Combine(workingDirectory, "output.log");
                 File.AppendAllText(logFilePath, text);
             });
+        }
+
+        private void ExitApplication()
+        {
+            _appSettings?.Save();
+            Application.Current.Shutdown();
+        }
+
+        private static void HandleError(string message, string title = "Error")
+        {
+            MessageBox.Show(
+                message,
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+        }
+
+        private void AdonisWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _appSettings?.Save();
+        }
+
+        private void ComboBoxDriversDirectory_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            var selectedItem = ComboBoxDriversDirectory?.SelectedItem;
+            if (selectedItem is CustomComboBoxItem)
+            {
+                _appSettings.Drivers = (selectedItem as CustomComboBoxItem).Label;
+            }
+        }
+
+        private void TextBoxLog_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+
         }
     }
 }

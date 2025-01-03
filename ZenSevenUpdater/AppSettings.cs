@@ -1,6 +1,7 @@
 ﻿using AdonisUI.Controls;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -9,22 +10,166 @@ using System.Xml.Serialization;
 
 namespace ZenSevenUpdater
 {
-    public sealed class AppSettings
+    public class AppSettings : INotifyPropertyChanged
     {
         private const int VERSION_MAJOR = 1;
         private const int VERSION_MINOR = 0;
 
         private const string filename = "settings.xml";
 
-        public AppSettings()
-        {}
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private string windows7IsoPath = string.Empty;
+        public string Windows7IsoPath
+        {
+            get => windows7IsoPath;
+            set
+            {
+                if (windows7IsoPath != value)
+                {
+                    windows7IsoPath = value;
+                    OnPropertyChanged(nameof(Windows7IsoPath));
+                }
+            }
+        }
+
+        private string windows10IsoPath = string.Empty;
+        public string Windows10IsoPath
+        {
+            get => windows10IsoPath;
+            set
+            {
+                if (windows10IsoPath != value)
+                {
+                    windows10IsoPath = value;
+                    OnPropertyChanged(nameof(Windows10IsoPath));
+                }
+            }
+        }
+
+        private string workingDirectory = @"C:\AM5";
+        public string WorkingDirectory
+        {
+            get => workingDirectory;
+            set
+            {
+                if (workingDirectory != value)
+                {
+                    workingDirectory = value;
+                    OnPropertyChanged(nameof(WorkingDirectory));
+                }
+            }
+        }
+
+
+
+        private string isoLabel = "BOOTABLEISO";
+        public string IsoLabel
+        {
+            get => isoLabel;
+            set
+            {
+                if (isoLabel != value)
+                {
+                    isoLabel = value;
+                    OnPropertyChanged(nameof(IsoLabel));
+                }
+            }
+        }
+
+        private string version = $"{VERSION_MAJOR}.{VERSION_MINOR}";
+        public string Version
+        {
+            get => version;
+            set
+            {
+                if (version != value)
+                {
+                    version = value;
+                    OnPropertyChanged(nameof(Version));
+                }
+            }
+        }
+
+        private double width = 0;
+        public double Width
+        {
+            get => width;
+            set
+            {
+                if (width != value)
+                {
+                    width = value;
+                    OnPropertyChanged(nameof(Width));
+                }
+            }
+        }
+
+        private double height = 0;
+        public double Height
+        {
+            get => height;
+            set
+            {
+                if (height != value)
+                {
+                    height = value;
+                    OnPropertyChanged(nameof(Height));
+                }
+            }
+        }
+
+        private int windowLeft = -1;
+        public int WindowLeft
+        {
+            get => windowLeft;
+            set
+            {
+                if (windowLeft != value)
+                {
+                    windowLeft = value;
+                    OnPropertyChanged(nameof(WindowLeft));
+                }
+            }
+        }
+
+        private int windowTop = -1;
+        private string drivers = string.Empty;
+        public int WindowTop
+        {
+            get => windowTop;
+            set
+            {
+                if (windowTop != value)
+                {
+                    windowTop = value;
+                    OnPropertyChanged(nameof(WindowTop));
+                }
+            }
+        }
+        public string Drivers
+        {
+            get => drivers;
+            set
+            {
+                if (drivers != value)
+                {
+                    drivers = value;
+                    OnPropertyChanged(nameof(Drivers));
+                }
+            }
+        }
+
+        public AppSettings() { }
 
         public AppSettings Create()
         {
-            //Version = $"{VERSION_MAJOR}.{VERSION_MINOR}";
-
             Save();
-
             return this;
         }
 
@@ -79,15 +224,5 @@ namespace ZenSevenUpdater
                     MessageBoxImage.Error);
             }
         }
-
-        public string Windows7IsoPath { get; set; } = string.Empty;
-        public string Windows10IsoPath { get; set; } = string.Empty;
-        public string WorkingDirectory { get; set; } = @"C:\AM5";
-        public string IsoLabel { get; set; } = "BOOTABLEISO";
-        public string Version { get; set; } = $"{VERSION_MAJOR}.{VERSION_MINOR}";
-        public double Width { get; set; } = 0;
-        public double Height { get; set; } = 0;
-        public int WindowLeft { get; set; } = -1;
-        public int WindowTop { get; set; } = -1;
     }
 }
