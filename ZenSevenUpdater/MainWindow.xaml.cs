@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using ZenSevenUpdater.Properties;
 
@@ -31,6 +32,7 @@ namespace ZenSevenUpdater
 
                 DismHelper.SetLogAction(Log);
                 IsoHelper.SetLogAction(Log);
+                UpdatesHelper.SetLogAction(Log);
 
                 ButtonBrowseWorkingDirectory.Click += (s, e) => ExecuteSafe(() => SelectDirectory(path =>
                 {
@@ -77,6 +79,8 @@ namespace ZenSevenUpdater
                     var isoLabel = _appSettings.IsoLabel;
 
                     var driversPath = (ComboBoxDriversDirectory.SelectedItem as CustomComboBoxItem)?.FullPath ?? "";
+                    
+                    CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackCheckAsync("updates\\UpdatePack7R2+.exe", ct));
 
                     CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers"));
                     CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
@@ -90,6 +94,19 @@ namespace ZenSevenUpdater
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
+
+                    var updatePackFiles = Directory.GetFiles("updates", "UpdatePack7R2-*");
+                    if (updatePackFiles.Length == 0)
+                    {
+                        CommandQueue.CancelQueue();
+                        Log("No UpdatePack7R2 files found.");
+                        return;
+                    }
+
+                    var updatePackFile = updatePackFiles.LastOrDefault();
+
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{updatePackFile}", $"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe"));
+                    CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, false, ct));
 
                     CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", true, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
@@ -251,9 +268,9 @@ namespace ZenSevenUpdater
             }
         }
 
-        private void TextBoxLog_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        private void AdonisWindow_Loaded(object sender, RoutedEventArgs e)
         {
-
+            TextBoxLog.Height = TextBoxLog.ActualHeight + 15;
         }
     }
 }

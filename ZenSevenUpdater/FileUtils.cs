@@ -98,6 +98,12 @@ namespace ZenSevenUpdater
         public static async Task CopyFileAsync(string sourceFilePath, string destinationFilePath)
         {
             Log($"Copying file: {sourceFilePath} to {destinationFilePath}");
+
+            if (!Directory.Exists(Path.GetDirectoryName(destinationFilePath)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFilePath));
+            }
+
             using (FileStream sourceStream = new FileStream(sourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true))
             {
                 using (FileStream destinationStream = new FileStream(destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))

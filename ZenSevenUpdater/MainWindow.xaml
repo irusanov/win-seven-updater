@@ -15,8 +15,8 @@
         Style="{DynamicResource WindowStyles}"
         UseLayoutRounding="True"
         SizeToContent="WidthAndHeight"
-        ResizeMode="NoResize"
-        Title="Zen Seven Updater" Height="482" Width="835" Closing="AdonisWindow_Closing">
+        ResizeMode="CanMinimize"
+        Title="Zen Seven Updater" Height="482" Width="835" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded">
     <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="10">
         <StackPanel Orientation="Horizontal">
             <StackPanel Orientation="Vertical" Width="340">
@@ -59,7 +59,7 @@
                         <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,5,5,5" Grid.ColumnSpan="3" />
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
-                            <materialIcons:MaterialIcon Kind="Cpu64Bit" Height="20" Margin="5 0 0 0" />
+                            <materialIcons:MaterialIcon Kind="NetworkInterfaceCard" Height="20" Margin="5 0 0 0" />
                             <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" />
                         </StackPanel>
                         <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,5,5,5" Grid.ColumnSpan="4" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged"/>
@@ -102,7 +102,7 @@
                     </Grid>
                 </Border>
             </StackPanel>
-            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" IsReadOnly="True" HorizontalContentAlignment="Left" FontSize="11" TextChanged="TextBoxLog_TextChanged"/>
+            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" IsReadOnly="True" HorizontalContentAlignment="Left" FontSize="11" />
         </StackPanel>
     </Border>
 </adonisControls:AdonisWindow>
