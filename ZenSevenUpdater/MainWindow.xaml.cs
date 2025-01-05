@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using ZenSevenUpdater.Properties;
@@ -245,20 +246,54 @@ namespace ZenSevenUpdater
             Dispatcher.Invoke(() =>
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                string text = $"[{timestamp}] {message}{Environment.NewLine}";
-                TextBoxLog.AppendText(text);
-                TextBoxLog.ScrollToEnd();
 
-                // Log to output.log file in the working directory
-                var workingDirectory = _appSettings.WorkingDirectory;
-                if (!Directory.Exists(workingDirectory))
+                if (message.Contains("%"))
                 {
-                    workingDirectory = Directory.GetCurrentDirectory();
+                    var percentageMatch = Regex.Match(message, @"(\d+\.\d+%)");
+                    if (percentageMatch.Success)
+                    {
+                        string progress = percentageMatch.Value;
+
+                        string currentText = TextBoxLog.Text;
+
+                        int lastProgressIndex = currentText.LastIndexOf("[DISM]: [");
+
+                        if (lastProgressIndex != -1)
+                        {
+                            int lineStartIndex = currentText.LastIndexOf(Environment.NewLine, lastProgressIndex);
+                            if (lineStartIndex == -1) lineStartIndex = 0;
+
+                            string textBeforeProgress = currentText.Substring(0, lineStartIndex);
+
+                            string updatedText = $"{textBeforeProgress}{Environment.NewLine}[{timestamp}] [DISM]: {progress} {Environment.NewLine}";
+
+                            TextBoxLog.Text = updatedText;
+                        }
+                        else
+                        {
+                            TextBoxLog.AppendText($"[{timestamp}] [DISM]: {progress} {Environment.NewLine}");
+                        }
+
+                        TextBoxLog.ScrollToEnd();
+                    }
                 }
-                var logFilePath = Path.Combine(workingDirectory, "output.log");
-                File.AppendAllText(logFilePath, text);
+                else
+                {
+                    string text = $"[{timestamp}] {message}{Environment.NewLine}";
+                    TextBoxLog.AppendText(text);
+                    TextBoxLog.ScrollToEnd();
+
+                    var workingDirectory = _appSettings.WorkingDirectory;
+                    if (!Directory.Exists(workingDirectory))
+                    {
+                        workingDirectory = Directory.GetCurrentDirectory();
+                    }
+                    var logFilePath = Path.Combine(workingDirectory, "output.log");
+                    File.AppendAllText(logFilePath, text);
+                }
             });
         }
+
 
         private void ExitApplication()
         {
