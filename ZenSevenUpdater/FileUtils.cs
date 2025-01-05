@@ -80,6 +80,8 @@ namespace SevenUpdater
             }
         }
 
+        
+
         public static async Task DeleteFileAsync(string filePath)
         {
             Log($"Deleting file: {filePath}");
@@ -326,5 +328,48 @@ namespace SevenUpdater
             }
             Log("Extraction completed\n");
         }
+
+        public static async Task RenameFileAsync(string sourceFilePath, string destinationFilePath)
+        {
+            Log($"Renaming file: {sourceFilePath} to {destinationFilePath}");
+            if (File.Exists(sourceFilePath))
+            {
+                try
+                {
+                    await Task.Run(() => File.Move(sourceFilePath, destinationFilePath));
+                    Log("File rename completed successfully.\n");
+                }
+                catch (Exception ex)
+                {
+                    throw new IOException($"Failed to rename file: {sourceFilePath} to {destinationFilePath}", ex);
+                }
+            }
+            else
+            {
+                throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
+            }
+        }
+        public static async Task MoveFileAsync(string sourceFilePath, string destinationFilePath)
+        {
+            Log($"Moving file: {sourceFilePath} to {destinationFilePath}");
+            if (File.Exists(sourceFilePath))
+            {
+                try
+                {
+                    await Task.Run(() => File.Move(sourceFilePath, destinationFilePath));
+                    Log("File move completed successfully.\n");
+                }
+                catch (Exception ex)
+                {
+                    throw new IOException($"Failed to move file: {sourceFilePath} to {destinationFilePath}", ex);
+                }
+            }
+            else
+            {
+                throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
+            }
+        }
+
+        
     }
 }

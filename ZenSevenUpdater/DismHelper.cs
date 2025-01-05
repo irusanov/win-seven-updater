@@ -1,9 +1,15 @@
-﻿using System;
+﻿using AdonisUI.Controls;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using MessageBox = AdonisUI.Controls.MessageBox;
 
 namespace SevenUpdater
 {
@@ -72,10 +78,17 @@ namespace SevenUpdater
             }
         }
 
-        public static List<(string Index, string Name, string Description)> GetWimInfo(string wimFilePath)
+        public class DismImageInfo
+        {
+            public string Index { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
+
+        public static List<DismImageInfo> GetWimInfo(string wimFilePath)
         {
             Log($"Retrieving WIM info for: {wimFilePath}");
-            var imageInfoList = new List<(string Index, string Name, string Description)>();
+            var imageInfoList = new List<DismImageInfo>();
 
             var startInfo = new ProcessStartInfo
             {
@@ -90,21 +103,59 @@ namespace SevenUpdater
 
             using (var process = new Process { StartInfo = startInfo })
             {
+                // Variables to hold image information for one image
+                string index = null, name = null, description = null;
+
+                // Start reading output
                 process.OutputDataReceived += (sender, e) =>
                 {
                     if (!string.IsNullOrWhiteSpace(e.Data))
                     {
-                        Log(e.Data);
-                        ParseWimInfo(e.Data, imageInfoList);
+                        Log(e.Data); // Log the output for debugging purposes
+
+                        // Check if the line contains "Index :", which signals the start of a new image
+                        if (e.Data.StartsWith("Index :"))
+                        {
+                            // If we already have an image, add it to the list
+                            if (!string.IsNullOrEmpty(index) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(description))
+                            {
+                                imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
+                            }
+
+                            // Reset for the next image
+                            index = null;
+                            name = null;
+                            description = null;
+
+                            // Extract index from the current line
+                            index = ExtractValue(e.Data, "Index :");
+                        }
+                        else if (e.Data.StartsWith("Name :"))
+                        {
+                            // Extract name
+                            name = ExtractValue(e.Data, "Name :");
+                        }
+                        else if (e.Data.StartsWith("Description :"))
+                        {
+                            // Extract description
+                            description = ExtractValue(e.Data, "Description :");
+                        }
                     }
                 };
 
                 process.ErrorDataReceived += (sender, e) => LogOutput(e.Data, "[DISM ERROR]");
 
+                // Start the process
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 process.WaitForExit();
+
+                // At the end of the process, add the last image (if exists)
+                if (!string.IsNullOrEmpty(index) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(description))
+                {
+                    imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
+                }
 
                 if (process.ExitCode != 0)
                 {
@@ -116,16 +167,28 @@ namespace SevenUpdater
             return imageInfoList;
         }
 
-        private static void ParseWimInfo(string data, List<(string Index, string Name, string Description)> imageInfoList)
+        /*
+        private static string ExtractValue(string data, string key)
         {
-            string index = ExtractValue(data, "Index :");
-            string name = ExtractValue(data, "Name :");
-            string description = ExtractValue(data, "Description :");
-
-            if (!string.IsNullOrEmpty(index))
+            int startIndex = data.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+            if (startIndex != -1)
             {
-                imageInfoList.Add((index, name, description));
+                startIndex += key.Length;
+                int endIndex = data.IndexOf(" ", startIndex);
+                if (endIndex == -1) endIndex = data.Length;
+
+                return data.Substring(startIndex, endIndex - startIndex).Trim();
             }
+            return null;
+        }*/
+
+        private static string ExtractValue(string input, string key)
+        {
+            if (input.StartsWith(key))
+            {
+                return input.Substring(key.Length).Trim();
+            }
+            return null;
         }
 
         public static void MountImage(string imagePath, string mountPath, string index, bool optimize)
@@ -152,6 +215,8 @@ namespace SevenUpdater
             string arguments = $"/Delete-Image /ImageFile:\"{imagePath}\" /Index:{index} /CheckIntegrity";
             ExecuteDismCommand(arguments, "Delete Image");
         }
+
+
 
         public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
         {
@@ -204,7 +269,7 @@ namespace SevenUpdater
             }, cancellationToken);
         }
 
-        public static async Task<List<(string Index, string Name, string Description)>> GetWimInfoAsync(string wimFilePath, CancellationToken cancellationToken)
+        public static async Task<List<DismImageInfo>> GetWimInfoAsync(string wimFilePath, CancellationToken cancellationToken)
         {
             return await Task.Run(() =>
             {
@@ -213,13 +278,83 @@ namespace SevenUpdater
             }, cancellationToken);
         }
 
-        private static string ExtractValue(string input, string key)
+        public static async Task ShowWimInfoDialogAsync(string wimFilePath, string workingDirectory, CancellationToken cancellationToken)
         {
-            if (input.StartsWith(key))
+            var wimInfoList = await GetWimInfoAsync(wimFilePath, cancellationToken);
+            if (wimInfoList == null || wimInfoList.Count == 0)
             {
-                return input.Substring(key.Length).Trim();
+                MessageBox.Show("No WIM images found.", "Error", AdonisUI.Controls.MessageBoxButton.OK, AdonisUI.Controls.MessageBoxImage.Error);
+                return;
             }
-            return null;
+
+            if (wimInfoList.Count == 1)
+            {
+                return;
+            }
+
+            var window = new AdonisWindow
+            {
+                Title = "Select WIM Image",
+                Width = 400,
+                Height = 300,
+                Owner = Application.Current.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(10),
+                DisplayMemberPath = "Name",
+                SelectedValuePath = "Index",
+                ItemsSource = wimInfoList,
+                SelectedIndex = 0
+            };
+
+            var button = new Button
+            {
+                Content = "OK",
+                Margin = new Thickness(10),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Width = 75
+            };
+
+            button.Click += (sender, e) => window.DialogResult = true;
+
+            var stackPanel = new StackPanel();
+            stackPanel.Children.Add(comboBox);
+            stackPanel.Children.Add(button);
+
+            window.Content = stackPanel;
+
+            if (window.ShowDialog() == true)
+            {
+                var selectedIndex = comboBox.SelectedValue?.ToString();
+                if (!string.IsNullOrEmpty(selectedIndex))
+                {
+                    var index = int.Parse(selectedIndex);
+                    var tempFilePath = Path.Combine(workingDirectory, "temp.wim");
+                    await ExtractImageAsync(wimFilePath, tempFilePath, index, cancellationToken);
+                    await FileUtils.DeleteFileAsync(wimFilePath);
+                    await FileUtils.MoveFileAsync(tempFilePath, wimFilePath);
+                }
+            }
+        }
+        public static void ExtractImage(string imagePath, string destinationPath, int index)
+        {
+            string arguments = $"/Export-Image /SourceImageFile:\"{imagePath}\" /SourceIndex:{index} /DestinationImageFile:\"{destinationPath}\"";
+            ExecuteDismCommand(arguments, "Extract Image");
+        }
+
+        public static async Task ExtractImageAsync(string imagePath, string destinationPath, int index, CancellationToken cancellationToken)
+        {
+            await Task.Run(() =>
+            {
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    ExtractImage(imagePath, destinationPath, index);
+                }
+            }, cancellationToken);
         }
     }
 }

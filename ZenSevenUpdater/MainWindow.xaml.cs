@@ -98,11 +98,14 @@ namespace SevenUpdater
                     CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
                     CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
 
+                    CommandQueue.EnqueueCommand(ct => DismHelper.ShowWimInfoDialogAsync(installWimPath, workingDirectory, ct));
+                    /*
                     CommandQueue.EnqueueCommand(ct => DismHelper.GetWimInfoAsync(installWimPath, ct));
 
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
+                    */
 
                     if (_appSettings.IncludeUpdates)
                     {
