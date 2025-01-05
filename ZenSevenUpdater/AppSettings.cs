@@ -124,8 +124,8 @@ namespace ZenSevenUpdater
             }
         }
 
-        private int windowLeft = -1;
-        public int WindowLeft
+        private double windowLeft = -1;
+        public double WindowLeft
         {
             get => windowLeft;
             set
@@ -138,8 +138,8 @@ namespace ZenSevenUpdater
             }
         }
 
-        private int windowTop = -1;
-        public int WindowTop
+        private double windowTop = -1;
+        public double WindowTop
         {
             get => windowTop;
             set

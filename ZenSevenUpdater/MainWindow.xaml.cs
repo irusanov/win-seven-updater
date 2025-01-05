@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
@@ -313,6 +314,8 @@ namespace ZenSevenUpdater
 
         private void AdonisWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            _appSettings.WindowLeft = Left;
+            _appSettings.WindowTop = Top;
             _appSettings?.Save();
         }
 
@@ -328,6 +331,31 @@ namespace ZenSevenUpdater
         private void AdonisWindow_Loaded(object sender, RoutedEventArgs e)
         {
             //TextBoxLog.Height = TextBoxLog.ActualHeight + 15;
+        }
+
+        private void AdonisWindow_Initialized(object sender, EventArgs e)
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+
+            // Get the current screen bounds
+            System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(this).Handle);
+            // Replace the existing code with the following code
+            System.Drawing.Rectangle screenBounds = screen.Bounds;
+
+            // Check if the saved window position is outside the screen bounds
+            if (_appSettings.WindowLeft < screenBounds.Left || _appSettings.WindowLeft + Width > screenBounds.Right ||
+                _appSettings.WindowTop < screenBounds.Top || _appSettings.WindowTop + Height > screenBounds.Bottom)
+            {
+                // Reset the window position to a default value
+                Left = (screenBounds.Width - Width) / 2 + screenBounds.Left;
+                Top = (screenBounds.Height - Height) / 2 + screenBounds.Top;
+            }
+            else
+            {
+                // Set the window position to the saved values
+                Left = _appSettings.WindowLeft;
+                Top = _appSettings.WindowTop;
+            }
         }
     }
 }
