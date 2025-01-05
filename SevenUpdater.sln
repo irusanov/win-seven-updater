@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenSevenUpdater", "ZenSevenUpdater\ZenSevenUpdater.csproj", "{C059DD56-38F1-4A5D-8C60-CDA665AEB8A7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SevenUpdater", "ZenSevenUpdater\SevenUpdater.csproj", "{C059DD56-38F1-4A5D-8C60-CDA665AEB8A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

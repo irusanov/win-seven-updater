@@ -1,4 +1,4 @@
-﻿<adonisControls:AdonisWindow x:Class="ZenSevenUpdater.MainWindow"
+﻿<adonisControls:AdonisWindow x:Class="SevenUpdater.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -8,7 +8,7 @@
         xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
         xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
         adonisExtensions:CursorSpotlightExtension.RelativeSpotlightSize="0"
-        xmlns:local="clr-namespace:ZenSevenUpdater"
+        xmlns:local="clr-namespace:SevenUpdater"
         mc:Ignorable="d"
         BorderThickness="1"
         BorderBrush="{DynamicResource WindowBorderColor}"
@@ -27,6 +27,7 @@
                             <ColumnDefinition Width="auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ZenSevenUpdater
+namespace SevenUpdater
 {
     public static class CommandQueue
     {

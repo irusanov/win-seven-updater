@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ZenSevenUpdater
+namespace SevenUpdater
 {
     internal class DismHelper
     {

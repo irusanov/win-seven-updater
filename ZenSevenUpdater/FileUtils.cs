@@ -6,9 +6,9 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using static ZenSevenUpdater.DismHelper;
+using static SevenUpdater.DismHelper;
 
-namespace ZenSevenUpdater
+namespace SevenUpdater
 {
     internal static class FileUtils
     {

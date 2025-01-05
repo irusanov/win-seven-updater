@@ -6,9 +6,9 @@ using System.Runtime;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
-using ZenSevenUpdater.Properties;
+using SevenUpdater.Properties;
 
-namespace ZenSevenUpdater
+namespace SevenUpdater
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -115,7 +115,6 @@ namespace ZenSevenUpdater
                     {
                         CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync("acpi\\WIN7_A5_FIX_ACPI.7z", $"{workingDirectory}\\acpi", ct));
                         CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers\\acpi.sys"));
-                        // CommandQueue.EnqueueCommand(ct => FileUtils.ChangeFileOwnerToCurrentUserAsync($"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository", "acpi.inf_amd64_neutral_", "acpi.sys"));
                         CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository", "acpi.inf_amd64_neutral_"));
                     }
 
@@ -266,13 +265,13 @@ namespace ZenSevenUpdater
 
                             string textBeforeProgress = currentText.Substring(0, lineStartIndex);
 
-                            string updatedText = $"{textBeforeProgress}{Environment.NewLine}[{timestamp}] [DISM]: {progress} {Environment.NewLine}";
+                            string updatedText = $"{textBeforeProgress}{Environment.NewLine}[{timestamp}] [DISM]: [{progress}] {Environment.NewLine}";
 
                             TextBoxLog.Text = updatedText;
                         }
                         else
                         {
-                            TextBoxLog.AppendText($"[{timestamp}] [DISM]: {progress} {Environment.NewLine}");
+                            TextBoxLog.AppendText($"[{timestamp}] [DISM]: [{progress}] {Environment.NewLine}");
                         }
 
                         TextBoxLog.ScrollToEnd();

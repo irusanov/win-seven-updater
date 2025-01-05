@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace ZenSevenUpdater
+namespace SevenUpdater
 {
     public class AppSettings : INotifyPropertyChanged
     {
