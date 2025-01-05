@@ -139,7 +139,6 @@ namespace ZenSevenUpdater
         }
 
         private int windowTop = -1;
-        private string drivers = string.Empty;
         public int WindowTop
         {
             get => windowTop;
@@ -152,6 +151,8 @@ namespace ZenSevenUpdater
                 }
             }
         }
+
+        private string drivers = string.Empty;
         public string Drivers
         {
             get => drivers;
@@ -164,6 +165,65 @@ namespace ZenSevenUpdater
                 }
             }
         }
+
+        private bool checkForUpdaterPackUpdates = true;
+
+        public bool CheckForUpdaterPackUpdates
+        {
+            get => checkForUpdaterPackUpdates;
+            set
+            {
+                if (checkForUpdaterPackUpdates != value)
+                {
+                    checkForUpdaterPackUpdates = value;
+                    OnPropertyChanged(nameof(CheckForUpdaterPackUpdates));
+                }
+            }
+        }
+
+        private bool includeModdedAcpi = false;
+        public bool IncludeModdedAcpi
+        {
+            get => includeModdedAcpi;
+            set
+            {
+                if (includeModdedAcpi != value)
+                {
+                    includeModdedAcpi = value;
+                    OnPropertyChanged(nameof(IncludeModdedAcpi));
+                }
+            }
+        }
+
+        private string outputDirectory = "C:\\AM5";
+        public string OutputDirectory
+        {
+            get => outputDirectory;
+            set
+            {
+                if (outputDirectory != value)
+                {
+                    outputDirectory = value;
+                    OnPropertyChanged(nameof(OutputDirectory));
+                }
+            }
+        }
+
+        private bool includeUpdates = true;
+        public bool IncludeUpdates
+        {
+            get => includeUpdates;
+            set
+            {
+                if (includeUpdates != value)
+                {
+                    includeUpdates = value;
+                    OnPropertyChanged(nameof(IncludeUpdates));
+                }
+            }
+        }
+
+
 
         public AppSettings() { }
 

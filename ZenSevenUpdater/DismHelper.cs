@@ -42,7 +42,8 @@ namespace ZenSevenUpdater
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                Verb = "runas"
             };
 
             using (var process = new Process { StartInfo = startInfo })
@@ -83,7 +84,8 @@ namespace ZenSevenUpdater
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                Verb = "runas"
             };
 
             using (var process = new Process { StartInfo = startInfo })
@@ -134,7 +136,7 @@ namespace ZenSevenUpdater
             }
 
             string optimizeOption = optimize ? "/Optimize" : string.Empty;
-            string arguments = $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\" {optimizeOption}".Trim();
+            string arguments = $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\" {optimizeOption}";
             ExecuteDismCommand(arguments, "Mount Image");
         }
 
@@ -154,7 +156,7 @@ namespace ZenSevenUpdater
         public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
         {
             string recurseOption = recurse ? "/Recurse" : string.Empty;
-            string arguments = $"/Add-Driver /Image:\"{imagePath}\" /Driver:\"{driverPath}\" {recurseOption} /forceunsigned";
+            string arguments = $"/Image:\"{imagePath}\" /Add-Driver /Driver:\"{driverPath}\" {recurseOption} /forceunsigned";
             ExecuteDismCommand(arguments, "Add Driver");
         }
 

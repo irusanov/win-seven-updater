@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using static ZenSevenUpdater.DismHelper;
@@ -21,7 +23,8 @@ namespace ZenSevenUpdater
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                Verb = "runas"
             };
 
             string checksum = string.Empty;
@@ -95,23 +98,159 @@ namespace ZenSevenUpdater
             Log("File deletion completed\n");
         }
 
+        public static async Task CopyFileAsync(string sourceFilePath, string basePath, string folderNameStart)
+        {
+            var folder = FindFolder(basePath, folderNameStart);
+            var path = Path.Combine(folder, Path.GetFileName(sourceFilePath));
+
+            await CopyFileAsync(sourceFilePath, path);
+        }
+
         public static async Task CopyFileAsync(string sourceFilePath, string destinationFilePath)
         {
             Log($"Copying file: {sourceFilePath} to {destinationFilePath}");
 
-            if (!Directory.Exists(Path.GetDirectoryName(destinationFilePath)))
+            try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationFilePath));
-            }
-
-            using (FileStream sourceStream = new FileStream(sourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true))
-            {
-                using (FileStream destinationStream = new FileStream(destinationFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
+                // Ensure the destination directory exists
+                string destinationDirectory = Path.GetDirectoryName(destinationFilePath);
+                if (!Directory.Exists(destinationDirectory))
                 {
-                    await sourceStream.CopyToAsync(destinationStream);
+                    Directory.CreateDirectory(destinationDirectory);
+                    Log($"Created directory: {destinationDirectory}");
                 }
+
+                // Perform the file copy operation asynchronously
+                await Task.Run(() => File.Copy(sourceFilePath, destinationFilePath, overwrite: true));
+
+                Log("File copy completed successfully.\n");
             }
-            Log("File copy completed\n");
+            catch (UnauthorizedAccessException)
+            {
+                Log("[ERROR]: Access denied. Ensure the application has appropriate permissions.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log($"[ERROR]: An error occurred during file copy: {ex.Message}");
+                throw;
+            }
+        }
+
+        public static async Task CopyFileToProtectedFolderAsync(string sourceFilePath, string basePath, string folderNameStart)
+        {
+            var folder = FindFolder(basePath, folderNameStart);
+            var path = Path.Combine(folder, Path.GetFileName(sourceFilePath));
+
+            await CopyFileToProtectedFolderAsync(sourceFilePath, path);
+        }
+
+        public static async Task CopyFileToProtectedFolderAsync(string sourceFilePath, string destinationFilePath)
+        {
+            Log($"Copying file: {sourceFilePath} to {destinationFilePath}");
+
+            try
+            {
+                // Ensure the source file exists
+                if (!File.Exists(sourceFilePath))
+                    throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
+
+                // Get the destination directory
+                string destinationDirectory = Path.GetDirectoryName(destinationFilePath);
+                if (string.IsNullOrWhiteSpace(destinationDirectory))
+                    throw new ArgumentException("Invalid destination file path.", nameof(destinationFilePath));
+
+                // Change ownership and permissions of the destination file and folder
+                await Task.Run(() => TakeOwnership(destinationDirectory));
+                await Task.Run(() => TakeOwnership(destinationFilePath));
+
+                // Copy the file
+                File.Copy(sourceFilePath, destinationFilePath, overwrite: true);
+
+                Log("File copy completed successfully.\n");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Log("[ERROR]: Access denied. Ensure the application is running with administrative privileges.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log($"[ERROR]: An error occurred: {ex.Message}");
+                throw;
+            }
+        }
+
+        public static void TakeOwnership(string filePath)
+        {
+            try
+            {
+                // Ensure the file path is valid
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    Console.WriteLine("Invalid file path.");
+                    return;
+                }
+
+                // Take ownership using takeown
+                string takeownCommand = $"/c takeown /f \"{filePath}\" /r /d y";
+                ExecuteCommand("cmd.exe", takeownCommand);
+
+                // Grant full control using icacls
+                string icaclsCommand = $"/c icacls \"{filePath}\" /grant *S-1-3-4:F /t /c /l /q";
+                ExecuteCommand("cmd.exe", icaclsCommand);
+
+                Console.WriteLine("Ownership successfully taken.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
+
+        private static void ExecuteCommand(string command, string arguments)
+        {
+            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = arguments,
+                WindowStyle = ProcessWindowStyle.Hidden, // Hide the command prompt window
+                Verb = "runas", // This ensures the command is run as Administrator
+                CreateNoWindow = true
+            };
+
+            using (Process process = Process.Start(processStartInfo))
+            {
+                process?.WaitForExit();
+            }
+        }
+
+        public static string FindFolder(string basePath, string folderStart)
+        {
+            if (string.IsNullOrWhiteSpace(basePath))
+                throw new ArgumentException("Base path cannot be null or empty.", nameof(basePath));
+
+            if (string.IsNullOrWhiteSpace(folderStart))
+                throw new ArgumentException("Folder start string cannot be null or empty.", nameof(folderStart));
+
+            if (!Directory.Exists(basePath))
+                throw new DirectoryNotFoundException($"The directory '{basePath}' does not exist.");
+
+            try
+            {
+                // Get directories in the base path and search for one that starts with the specified string
+                var directories = Directory.GetDirectories(basePath);
+
+                var matchingFolder = directories
+                    .FirstOrDefault(dir => Path.GetFileName(dir).StartsWith(folderStart, StringComparison.OrdinalIgnoreCase));
+
+                return matchingFolder; // Return the full path of the folder if found, or null if not
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while searching for the folder: {ex.Message}");
+                return null;
+            }
         }
 
         public static bool IsDirectoryEmpty(string path)
@@ -144,7 +283,7 @@ namespace ZenSevenUpdater
                 .ToArray();
         }
 
-        public static async Task ExtractArchiveAsync(string archivePath, string destinationPath)
+        public static async Task ExtractArchiveAsync(string archivePath, string destinationPath, CancellationToken cancellationToken)
         {
             Log($"Extracting archive: {archivePath} to {destinationPath}");
 
@@ -155,7 +294,7 @@ namespace ZenSevenUpdater
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
 
             using (Process process = new Process { StartInfo = startInfo })
@@ -167,7 +306,18 @@ namespace ZenSevenUpdater
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                await Task.Run(() => process.WaitForExit());
+                await Task.Run(() =>
+                {
+                    while (!process.HasExited)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            process.Kill();
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+                        Thread.Sleep(100);
+                    }
+                }, cancellationToken);
 
                 if (process.ExitCode != 0)
                 {

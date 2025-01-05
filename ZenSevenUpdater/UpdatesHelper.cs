@@ -1,8 +1,9 @@
-﻿
+
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -96,7 +97,7 @@ namespace ZenSevenUpdater
         {
             if (File.Exists(path))
             {
-                Log($"Starting: {System.IO.Path.GetFileName(path)} with parameters.");
+                Log($"Starting: {System.IO.Path.GetFileName(path)}.");
 
 
                 var startInfo = new ProcessStartInfo
@@ -124,6 +125,17 @@ namespace ZenSevenUpdater
 
         public static async Task RunUpdatePackAsync(string path, string wimFilePath, int index, bool optimize, CancellationToken cancellationToken)
         {
+            var updatePackFiles = Directory.GetFiles("updates", "UpdatePack7R2-*");
+            if (updatePackFiles.Length == 0)
+            {
+                CommandQueue.CancelQueue();
+                Log("No UpdatePack7R2 files found.");
+                return;
+            }
+
+            var updatePackFile = updatePackFiles.LastOrDefault();
+
+            await FileUtils.CopyFileAsync($"{updatePackFile}", path);
             await Task.Run(() => RunUpdatePack(path, wimFilePath, index, optimize), cancellationToken);
         }
     }

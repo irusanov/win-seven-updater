@@ -14,10 +14,10 @@
         BorderBrush="{DynamicResource WindowBorderColor}"
         Style="{DynamicResource WindowStyles}"
         UseLayoutRounding="True"
-        SizeToContent="WidthAndHeight"
+        SizeToContent="Width"
         ResizeMode="CanMinimize"
-        Title="Zen Seven Updater" Height="482" Width="835" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded">
-    <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="10">
+        Title="Seven Updater" Height="622" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded">
+    <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="5">
         <StackPanel Orientation="Horizontal">
             <StackPanel Orientation="Vertical" Width="340">
                 <GroupBox Header="Input" Margin="5">
@@ -35,47 +35,54 @@
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
+                            <RowDefinition Height="auto"></RowDefinition>
+                            <RowDefinition Height="auto"></RowDefinition>
+                            <RowDefinition Height="auto"></RowDefinition>
                         </Grid.RowDefinitions>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
                             <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelWindows7IsoPath" Content="Windows 7 ISO Path" Margin="5" />
+                            <Label x:Name="LabelWindows7IsoPath" Content="Windows 7/2008 Server ISO Path" Margin="5" />
                         </StackPanel>
-                        <TextBox x:Name="TextBoxWindows7IsoPath" Grid.Column="0" Grid.Row="1" IsReadOnly="True" Margin="5,5,5,3" Text="{Binding Windows7IsoPath, Mode=TwoWay}" />
-                        <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5,5,5,5" Grid.ColumnSpan="3" />
+                        <TextBox x:Name="TextBoxWindows7IsoPath" Grid.Column="0" Grid.Row="1" Margin="5,5,5,3" Text="{Binding Windows7IsoPath, Mode=TwoWay}" />
+                        <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5,5,5,3" Grid.ColumnSpan="3" />
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
                             <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
                             <Label x:Name="LabelWindows10IsoPath" Content="Windows 10 ISO Path" Margin="5" />
                         </StackPanel>
-                        <TextBox x:Name="TextBoxWindows10IsoPath" Grid.Column="0" Grid.Row="3" IsReadOnly="True" Margin="5,5,5,3" Text="{Binding Windows10IsoPath}" />
-                        <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,5,5,5" Grid.ColumnSpan="3" />
+                        <TextBox x:Name="TextBoxWindows10IsoPath" Grid.Column="0" Grid.Row="3" Margin="5,5,5,3" Text="{Binding Windows10IsoPath}" />
+                        <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,5,5,3" Grid.ColumnSpan="3" />
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4">
                             <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
                             <Label x:Name="LabelWorkingDirectory" Content="Working Directory" Margin="5" />
                         </StackPanel>
-                        <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" IsReadOnly="True" Margin="5,5,5,5" Text="{Binding WorkingDirectory}" />
-                        <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,5,5,5" Grid.ColumnSpan="3" />
+                        <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" Margin="5,5,5,3" Text="{Binding WorkingDirectory}" />
+                        <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,5,5,3" Grid.ColumnSpan="3" />
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
                             <materialIcons:MaterialIcon Kind="NetworkInterfaceCard" Height="20" Margin="5 0 0 0" />
                             <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" />
                         </StackPanel>
-                        <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,5,5,5" Grid.ColumnSpan="4" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged"/>
+                        <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,5,5,5" Grid.ColumnSpan="4" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged" />
+
+                        <CheckBox x:Name="CheckBoxIncludeUpdates" Grid.Column="0" Grid.Row="8" Margin="5" Content="Include updates" IsChecked="{Binding IncludeUpdates}" />
+                        <CheckBox x:Name="CheckBoxCheckForUpdates" Grid.Column="0" Grid.Row="9" Margin="5" Content="Check for UpdaterPack updates" IsChecked="{Binding CheckForUpdaterPackUpdates}" />
+                        <CheckBox x:Name="CheckBoxIncludeModdedAcpi" Grid.Column="0" Grid.Row="10" Margin="5" Content="Include modded acpi.sys" IsChecked="{Binding IncludeModdedAcpi}" />
                     </Grid>
                 </GroupBox>
                 
                 <GroupBox Header="Output" Margin="5">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
                             <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
                             <ColumnDefinition Width="auto"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
 
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="auto"></RowDefinition>
+                            <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
                             <RowDefinition Height="auto"></RowDefinition>
                         </Grid.RowDefinitions>
@@ -85,6 +92,13 @@
                             <Label x:Name="LabelIsoLabel" Content="ISO Label" Margin="5" />
                         </StackPanel>
                         <TextBox x:Name="TextBoxIsoLabel" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="4" Margin="5,5,5,5" Text="{Binding IsoLabel}" />
+                        
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
+                            <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
+                            <Label x:Name="LabelOutputDirectory" Content="Output Directory" Margin="5" />
+                        </StackPanel>
+                        <TextBox x:Name="TextBoxOutputDirectory" Grid.Column="0" Grid.Row="3" Margin="5,5,5,3" Text="{Binding OutputDirectory}" />
+                        <Button x:Name="ButtonBrowseOutputDirectory" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,5,5,3" Grid.ColumnSpan="3" />
                     </Grid>
                 </GroupBox>
                 
@@ -102,7 +116,7 @@
                     </Grid>
                 </Border>
             </StackPanel>
-            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" IsReadOnly="True" HorizontalContentAlignment="Left" FontSize="11" />
+            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" HorizontalContentAlignment="Left" FontSize="11" />
         </StackPanel>
     </Border>
 </adonisControls:AdonisWindow>

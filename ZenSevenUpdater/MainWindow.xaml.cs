@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using ZenSevenUpdater.Properties;
 
@@ -56,6 +57,8 @@ namespace ZenSevenUpdater
 
                 ButtonBrowseWin10.Click += (s, e) => ExecuteSafe(() => SelectFile("ISO Files (*.iso)|*.iso", path => _appSettings.Windows10IsoPath = path));
 
+                ButtonBrowseOutputDirectory.Click += (s, e) => ExecuteSafe(() => SelectDirectory(path => _appSettings.OutputDirectory = path));
+
                 CommandQueue.OnQueueCompleted += () =>
                 {
                     _isActionRunning = false;
@@ -72,17 +75,21 @@ namespace ZenSevenUpdater
                     var win7IsoPath = _appSettings.Windows7IsoPath;
                     var win10IsoPath = _appSettings.Windows10IsoPath;
                     var workingDirectory = _appSettings.WorkingDirectory;
+                    var outputDirectory = String.IsNullOrEmpty(_appSettings.OutputDirectory) ? workingDirectory : _appSettings.OutputDirectory;
                     var win7WorkingDirectory = $"{workingDirectory}\\win7";
                     var win10WorkingDirectory = $"{workingDirectory}\\win10";
                     var installWimPath = $"{win7WorkingDirectory}\\sources\\install.wim";
-                    var mountDirectory = $"{workingDirectory}\\mount";
+                    var mountDirectory = $"{workingDirectory}\\offline";
                     var isoLabel = _appSettings.IsoLabel;
+                    bool addDrivers = ComboBoxDriversDirectory.SelectedIndex > 0;
 
                     var driversPath = (ComboBoxDriversDirectory.SelectedItem as CustomComboBoxItem)?.FullPath ?? "";
-                    
-                    CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackCheckAsync("updates\\UpdatePack7R2+.exe", ct));
 
-                    CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers"));
+                    if (_appSettings.CheckForUpdaterPackUpdates)
+                    {
+                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackCheckAsync("updates\\UpdatePack7R2+.exe", ct));
+                    }
+
                     CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
                     CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
 
@@ -95,28 +102,31 @@ namespace ZenSevenUpdater
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
                     CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
 
-                    var updatePackFiles = Directory.GetFiles("updates", "UpdatePack7R2-*");
-                    if (updatePackFiles.Length == 0)
+                    if (_appSettings.IncludeUpdates)
                     {
-                        CommandQueue.CancelQueue();
-                        Log("No UpdatePack7R2 files found.");
-                        return;
+                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, true, ct));
                     }
 
-                    var updatePackFile = updatePackFiles.LastOrDefault();
+                    CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", false, ct));
 
-                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{updatePackFile}", $"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe"));
-                    CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, false, ct));
+                    if (_appSettings.IncludeModdedAcpi)
+                    {
+                        CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync("acpi\\WIN7_A5_FIX_ACPI.7z", $"{workingDirectory}\\acpi", ct));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers\\acpi.sys"));
+                        // CommandQueue.EnqueueCommand(ct => FileUtils.ChangeFileOwnerToCurrentUserAsync($"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository", "acpi.inf_amd64_neutral_", "acpi.sys"));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository", "acpi.inf_amd64_neutral_"));
+                    }
 
-                    CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", true, ct));
-                    CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
+                    if (addDrivers)
+                    {
+                        CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers", ct));
+                        CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
+                    }
+
                     CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, true, ct));
-
                     CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources\\install.wim"));
-
                     CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
-
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync(win10WorkingDirectory, $"{workingDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
                 };
 
                 ButtonCancel.Click += (s, e) =>
@@ -124,7 +134,7 @@ namespace ZenSevenUpdater
                     CommandQueue.CancelQueue();
 
                     var workingDirectory = _appSettings.WorkingDirectory;
-                    var mountDirectory = $"{workingDirectory}\\mount";
+                    var mountDirectory = $"{workingDirectory}\\offline";
                     if (!FileUtils.IsDirectoryEmpty(mountDirectory))
                     {
                         CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, false, ct));
@@ -136,7 +146,7 @@ namespace ZenSevenUpdater
                     SetButtonsEnabled(false);
 
                     var workingDirectory = _appSettings.WorkingDirectory;
-                    var mountDirectory = $"{workingDirectory}\\mount";
+                    var mountDirectory = $"{workingDirectory}\\offline";
                     if (!FileUtils.IsDirectoryEmpty(mountDirectory))
                     {
                         CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, false, ct));
@@ -146,6 +156,8 @@ namespace ZenSevenUpdater
 
                 // Drivers combobox
                 var drivers = FileUtils.GetArchiveFiles(Path.Combine(Directory.GetCurrentDirectory(), "drivers"));
+                ComboBoxDriversDirectory.DisplayMemberPath = "Label";
+                ComboBoxDriversDirectory.Items.Add(new CustomComboBoxItem { Label = "None", FullPath = "" });
                 foreach (string driver in drivers)
                 {
                     var driverLabel = Path.GetFileNameWithoutExtension(driver);
@@ -155,7 +167,10 @@ namespace ZenSevenUpdater
                         ComboBoxDriversDirectory.SelectedIndex = ComboBoxDriversDirectory.Items.Count - 1;
                     }
                 }
-                ComboBoxDriversDirectory.DisplayMemberPath = "Label";
+                if (ComboBoxDriversDirectory.SelectedIndex == -1)
+                {
+                    ComboBoxDriversDirectory.SelectedIndex = 0;
+                }
 
                 Log("Ready.");
             }
@@ -172,11 +187,18 @@ namespace ZenSevenUpdater
             ButtonBrowseWin10.IsEnabled = isEnabled;
             ButtonStart.IsEnabled = isEnabled;
             ButtonCleanup.IsEnabled = isEnabled;
+            ButtonBrowseWorkingDirectory.IsEnabled = isEnabled;
+            ButtonBrowseOutputDirectory.IsEnabled = isEnabled;
             TextBoxIsoLabel.IsEnabled = isEnabled;
             ComboBoxDriversDirectory.IsEnabled = isEnabled;
             TextBoxIsoLabel.IsEnabled = isEnabled;
             TextBoxWindows7IsoPath.IsEnabled = isEnabled;
             TextBoxWindows10IsoPath.IsEnabled = isEnabled;
+            TextBoxWorkingDirectory.IsEnabled = isEnabled;
+            TextBoxOutputDirectory.IsEnabled = isEnabled;
+            CheckBoxCheckForUpdates.IsEnabled = isEnabled;
+            CheckBoxIncludeModdedAcpi.IsEnabled = isEnabled;
+            CheckBoxIncludeUpdates.IsEnabled = isEnabled;
         }
 
         private void SelectFile(string filter, Action<string> onFileSelected)
@@ -270,7 +292,7 @@ namespace ZenSevenUpdater
 
         private void AdonisWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            TextBoxLog.Height = TextBoxLog.ActualHeight + 15;
+            //TextBoxLog.Height = TextBoxLog.ActualHeight + 15;
         }
     }
 }
