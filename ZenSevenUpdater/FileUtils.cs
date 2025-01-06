@@ -278,7 +278,7 @@ namespace SevenUpdater
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = "7za.exe",
+                FileName = "bin\\7za.exe",
                 Arguments = $"x \"{archivePath}\" -o\"{destinationPath}\" -y",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

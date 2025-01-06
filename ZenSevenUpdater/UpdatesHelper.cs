@@ -93,7 +93,7 @@ namespace SevenUpdater
             await Task.Run(() => RunUpdatePackCheck(updatePackFullPath, cancellationToken), cancellationToken);
         }
 
-        public static void RunUpdatePack(string path, string wimFilePath, int index, bool optimize)
+        public static void RunUpdatePack(string path, string wimFilePath, string tempDirectory, int index, bool optimize)
         {
             if (File.Exists(path))
             {
@@ -103,7 +103,7 @@ namespace SevenUpdater
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = path,
-                    Arguments = $"/WimFile=\"{wimFilePath}\" /Index={index} {(optimize ? "/Optimize" : "")}",
+                    Arguments = $"/WimFile=\"{wimFilePath}\" /Index={index} /Temp=\"{tempDirectory}\" {(optimize ? "/Optimize" : "")}",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
@@ -123,7 +123,7 @@ namespace SevenUpdater
             }
         }
 
-        public static async Task RunUpdatePackAsync(string path, string wimFilePath, int index, bool optimize, CancellationToken cancellationToken)
+        public static async Task RunUpdatePackAsync(string path, string wimFilePath, string tempDirectory, int index, bool optimize, CancellationToken cancellationToken)
         {
             var updatePackFiles = Directory.GetFiles("updates", "UpdatePack7R2-*");
             if (updatePackFiles.Length == 0)
@@ -136,7 +136,7 @@ namespace SevenUpdater
             var updatePackFile = updatePackFiles.LastOrDefault();
 
             await FileUtils.CopyFileAsync($"{updatePackFile}", path);
-            await Task.Run(() => RunUpdatePack(path, wimFilePath, index, optimize), cancellationToken);
+            await Task.Run(() => RunUpdatePack(path, wimFilePath, tempDirectory, index, optimize), cancellationToken);
         }
     }
 }

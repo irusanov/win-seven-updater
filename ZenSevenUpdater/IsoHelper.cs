@@ -109,7 +109,7 @@ namespace SevenUpdater
 
             Log($"Creating ISO using oscdimg.exe from directory: {sourceDirectory} to {outputIsoPath}");
 
-            string oscdimgPath = "C:\\GIT\\zen-seven-updater\\ZenSevenUpdater\\bin\\Debug\\oscdimg.exe";
+            string oscdimgPath = "bin\\oscdimg.exe";
             string arguments = $"-bootdata:2#p0,e,b\"{sourceDirectory}\\boot\\etfsboot.com\"#pEF,e,b\"{sourceDirectory}\\efi\\microsoft\\boot\\efisys.bin\" " +
                            $"-o -m -u2 -udfver102 -l{label} \"{sourceDirectory}\" \"{outputIsoPath}\"";
 

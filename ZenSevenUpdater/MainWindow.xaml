@@ -16,7 +16,7 @@
         UseLayoutRounding="True"
         SizeToContent="Width"
         ResizeMode="CanMinimize"
-        Title="Seven Updater" Height="576" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded" Initialized="AdonisWindow_Initialized">
+        Title="Seven Updater v1.0-beta" Height="576" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded" Initialized="AdonisWindow_Initialized">
     <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="5">
         <StackPanel Orientation="Horizontal">
             <StackPanel Orientation="Vertical" Width="340">
