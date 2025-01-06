@@ -1,11 +1,7 @@
 ﻿using AdonisUI.Controls;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace SevenUpdater
@@ -68,7 +64,7 @@ namespace SevenUpdater
 
 
 
-        private string isoLabel = "BOOTABLEISO";
+        private string isoLabel = "AMDSEVEN";
         public string IsoLabel
         {
             get => isoLabel;

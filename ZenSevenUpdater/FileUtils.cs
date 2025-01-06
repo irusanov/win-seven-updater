@@ -2,8 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using static SevenUpdater.DismHelper;
@@ -80,8 +78,6 @@ namespace SevenUpdater
             }
         }
 
-        
-
         public static async Task DeleteFileAsync(string filePath)
         {
             Log($"Deleting file: {filePath}");
@@ -90,7 +86,7 @@ namespace SevenUpdater
                 try
                 {
                     File.Delete(filePath);
-                    await Task.CompletedTask; // Simulate async operation
+                    await Task.CompletedTask;
                 }
                 catch (Exception ex)
                 {
@@ -114,7 +110,6 @@ namespace SevenUpdater
 
             try
             {
-                // Ensure the destination directory exists
                 string destinationDirectory = Path.GetDirectoryName(destinationFilePath);
                 if (!Directory.Exists(destinationDirectory))
                 {
@@ -122,7 +117,6 @@ namespace SevenUpdater
                     Log($"Created directory: {destinationDirectory}");
                 }
 
-                // Perform the file copy operation asynchronously
                 await Task.Run(() => File.Copy(sourceFilePath, destinationFilePath, overwrite: true));
 
                 Log("File copy completed successfully.\n");
@@ -153,20 +147,16 @@ namespace SevenUpdater
 
             try
             {
-                // Ensure the source file exists
                 if (!File.Exists(sourceFilePath))
                     throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
 
-                // Get the destination directory
                 string destinationDirectory = Path.GetDirectoryName(destinationFilePath);
                 if (string.IsNullOrWhiteSpace(destinationDirectory))
                     throw new ArgumentException("Invalid destination file path.", nameof(destinationFilePath));
 
-                // Change ownership and permissions of the destination file and folder
                 await Task.Run(() => TakeOwnership(destinationDirectory));
                 await Task.Run(() => TakeOwnership(destinationFilePath));
 
-                // Copy the file
                 File.Copy(sourceFilePath, destinationFilePath, overwrite: true);
 
                 Log("File copy completed successfully.\n");
@@ -187,18 +177,15 @@ namespace SevenUpdater
         {
             try
             {
-                // Ensure the file path is valid
                 if (string.IsNullOrEmpty(filePath))
                 {
                     Console.WriteLine("Invalid file path.");
                     return;
                 }
 
-                // Take ownership using takeown
                 string takeownCommand = $"/c takeown /f \"{filePath}\" /r /d y";
                 ExecuteCommand("cmd.exe", takeownCommand);
 
-                // Grant full control using icacls
                 string icaclsCommand = $"/c icacls \"{filePath}\" /grant *S-1-3-4:F /t /c /l /q";
                 ExecuteCommand("cmd.exe", icaclsCommand);
 
@@ -216,8 +203,8 @@ namespace SevenUpdater
             {
                 FileName = command,
                 Arguments = arguments,
-                WindowStyle = ProcessWindowStyle.Hidden, // Hide the command prompt window
-                Verb = "runas", // This ensures the command is run as Administrator
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Verb = "runas",
                 CreateNoWindow = true
             };
 
@@ -240,13 +227,12 @@ namespace SevenUpdater
 
             try
             {
-                // Get directories in the base path and search for one that starts with the specified string
                 var directories = Directory.GetDirectories(basePath);
 
                 var matchingFolder = directories
                     .FirstOrDefault(dir => Path.GetFileName(dir).StartsWith(folderStart, StringComparison.OrdinalIgnoreCase));
 
-                return matchingFolder; // Return the full path of the folder if found, or null if not
+                return matchingFolder;
             }
             catch (Exception ex)
             {
@@ -269,6 +255,7 @@ namespace SevenUpdater
             });
             Log("Cleanup completed\n");
         }
+
         public static string[] GetArchiveFiles(string path)
         {
             if (!Directory.Exists(path))
@@ -349,6 +336,7 @@ namespace SevenUpdater
                 throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
             }
         }
+
         public static async Task MoveFileAsync(string sourceFilePath, string destinationFilePath)
         {
             Log($"Moving file: {sourceFilePath} to {destinationFilePath}");
@@ -369,7 +357,5 @@ namespace SevenUpdater
                 throw new FileNotFoundException("Source file does not exist.", sourceFilePath);
             }
         }
-
-        
     }
 }

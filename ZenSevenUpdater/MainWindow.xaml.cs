@@ -1,12 +1,8 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.IO;
-using System.Linq;
-using System.Runtime;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows;
-using SevenUpdater.Properties;
 
 namespace SevenUpdater
 {
@@ -93,25 +89,15 @@ namespace SevenUpdater
                     }
 
                     CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
-
-                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
-                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
 
                     CommandQueue.EnqueueCommand(ct => DismHelper.ShowWimInfoDialogAsync(installWimPath, workingDirectory, ct));
+
                     /*
-                    CommandQueue.EnqueueCommand(ct => DismHelper.GetWimInfoAsync(installWimPath, ct));
-
-                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-                    CommandQueue.EnqueueCommand(ct => DismHelper.DeleteImageAsync(installWimPath, 1, ct));
-                    */
-
                     if (_appSettings.IncludeUpdates)
                     {
                         CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, true, ct));
                     }
-
+                    */
                     CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", false, ct));
 
                     if (_appSettings.IncludeModdedAcpi)
@@ -128,9 +114,20 @@ namespace SevenUpdater
                     }
 
                     CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, true, ct));
+
+                    if (_appSettings.IncludeUpdates)
+                    {
+                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, true, ct));
+                    }
+
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
+                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
+                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
+
                     CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources\\install.wim"));
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{Path.GetDirectoryName(installWimPath)}\\install_Windows 7 ULTIMATE.clg", $"{win10WorkingDirectory}\\sources\\install_Windows 7 ULTIMATE.clg"));
                     CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateBootableIsoFromDirectoryAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "BOOTABLEISO", ct));
+                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateIsoWithOcdimgAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "AMDSEVEN", ct));
                 };
 
                 ButtonCancel.Click += (s, e) =>

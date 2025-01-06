@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -103,41 +101,31 @@ namespace SevenUpdater
 
             using (var process = new Process { StartInfo = startInfo })
             {
-                // Variables to hold image information for one image
                 string index = null, name = null, description = null;
 
-                // Start reading output
                 process.OutputDataReceived += (sender, e) =>
                 {
                     if (!string.IsNullOrWhiteSpace(e.Data))
                     {
-                        Log(e.Data); // Log the output for debugging purposes
+                        Log(e.Data);
 
-                        // Check if the line contains "Index :", which signals the start of a new image
                         if (e.Data.StartsWith("Index :"))
                         {
-                            // If we already have an image, add it to the list
-                            if (!string.IsNullOrEmpty(index) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(description))
+                            if (index != null && name != null && description != null)
                             {
                                 imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
                             }
 
-                            // Reset for the next image
-                            index = null;
+                            index = ExtractValue(e.Data, "Index :");
                             name = null;
                             description = null;
-
-                            // Extract index from the current line
-                            index = ExtractValue(e.Data, "Index :");
                         }
                         else if (e.Data.StartsWith("Name :"))
                         {
-                            // Extract name
                             name = ExtractValue(e.Data, "Name :");
                         }
                         else if (e.Data.StartsWith("Description :"))
                         {
-                            // Extract description
                             description = ExtractValue(e.Data, "Description :");
                         }
                     }
@@ -145,14 +133,12 @@ namespace SevenUpdater
 
                 process.ErrorDataReceived += (sender, e) => LogOutput(e.Data, "[DISM ERROR]");
 
-                // Start the process
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
                 process.WaitForExit();
 
-                // At the end of the process, add the last image (if exists)
-                if (!string.IsNullOrEmpty(index) && !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(description))
+                if (index != null && name != null && description != null)
                 {
                     imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
                 }
@@ -166,21 +152,6 @@ namespace SevenUpdater
             Log($"Retrieved {imageInfoList.Count} images from WIM file.");
             return imageInfoList;
         }
-
-        /*
-        private static string ExtractValue(string data, string key)
-        {
-            int startIndex = data.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-            if (startIndex != -1)
-            {
-                startIndex += key.Length;
-                int endIndex = data.IndexOf(" ", startIndex);
-                if (endIndex == -1) endIndex = data.Length;
-
-                return data.Substring(startIndex, endIndex - startIndex).Trim();
-            }
-            return null;
-        }*/
 
         private static string ExtractValue(string input, string key)
         {
@@ -215,8 +186,6 @@ namespace SevenUpdater
             string arguments = $"/Delete-Image /ImageFile:\"{imagePath}\" /Index:{index} /CheckIntegrity";
             ExecuteDismCommand(arguments, "Delete Image");
         }
-
-
 
         public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
         {
@@ -295,10 +264,13 @@ namespace SevenUpdater
             var window = new AdonisWindow
             {
                 Title = "Select WIM Image",
-                Width = 400,
-                Height = 300,
+                Width = 300,
+                Height = 200,
                 Owner = Application.Current.MainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStyle = WindowStyle.ToolWindow,
+                SizeToContent = SizeToContent.Height,
             };
 
             var comboBox = new ComboBox
