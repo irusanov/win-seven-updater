@@ -107,6 +107,11 @@ namespace SevenUpdater
                 throw new DirectoryNotFoundException($"Source directory not found: {sourceDirectory}");
             }
 
+            if (!Directory.Exists(Path.GetDirectoryName(outputIsoPath)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(outputIsoPath));
+            }
+
             Log($"Creating ISO using oscdimg.exe from directory: {sourceDirectory} to {outputIsoPath}");
 
             string oscdimgPath = "bin\\oscdimg.exe";

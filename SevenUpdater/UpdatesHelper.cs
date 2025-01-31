@@ -135,8 +135,8 @@ namespace SevenUpdater
 
             var updatePackFile = updatePackFiles.LastOrDefault();
 
-            await FileUtils.CopyFileAsync($"{updatePackFile}", path);
-            await Task.Run(() => RunUpdatePack(path, wimFilePath, tempDirectory, index, optimize), cancellationToken);
+            await FileUtils.CopyFileAsync(updatePackFile, path);
+            await Task.Run(() => RunUpdatePack(Path.Combine(path, Path.GetFileName(updatePackFile)), wimFilePath, tempDirectory, index, optimize), cancellationToken);
         }
     }
 }

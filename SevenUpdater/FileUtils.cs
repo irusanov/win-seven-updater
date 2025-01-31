@@ -104,20 +104,34 @@ namespace SevenUpdater
             await CopyFileAsync(sourceFilePath, path);
         }
 
-        public static async Task CopyFileAsync(string sourceFilePath, string destinationFilePath)
+        public static async Task CopyFileAsync(string sourceFilePathPattern, string destinationDirectory)
         {
-            Log($"Copying file: {sourceFilePath} to {destinationFilePath}");
+            Log($"Copying files matching pattern: {sourceFilePathPattern} to {destinationDirectory}");
 
             try
             {
-                string destinationDirectory = Path.GetDirectoryName(destinationFilePath);
+                string sourceDirectory = Path.GetDirectoryName(sourceFilePathPattern);
+                //string destinationDirectory = Path.GetDirectoryName(destinationPath);
+                string filePattern = Path.GetFileName(sourceFilePathPattern);
+
+                if (!Directory.Exists(sourceDirectory))
+                {
+                    throw new DirectoryNotFoundException($"Source directory does not exist: {sourceDirectory}");
+                }
+
                 if (!Directory.Exists(destinationDirectory))
                 {
                     Directory.CreateDirectory(destinationDirectory);
                     Log($"Created directory: {destinationDirectory}");
                 }
 
-                await Task.Run(() => File.Copy(sourceFilePath, destinationFilePath, overwrite: true));
+                var files = Directory.GetFiles(sourceDirectory, filePattern);
+                foreach (var file in files)
+                {
+                    string destinationFilePath = Path.Combine(destinationDirectory, Path.GetFileName(file));
+                    await Task.Run(() => File.Copy(file, destinationFilePath, overwrite: true));
+                    Log($"Copied file: {file} to {destinationFilePath}");
+                }
 
                 Log("File copy completed successfully.\n");
             }

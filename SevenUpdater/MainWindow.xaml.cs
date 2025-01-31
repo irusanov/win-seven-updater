@@ -1,6 +1,8 @@
 ﻿using Microsoft.Win32;
+using SevenUpdater.Properties;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 
@@ -103,8 +105,11 @@ namespace SevenUpdater
                     if (_appSettings.IncludeModdedAcpi)
                     {
                         CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync("acpi\\WIN7_A5_FIX_ACPI.7z", $"{workingDirectory}\\acpi", ct));
-                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers\\acpi.sys"));
-                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository", "acpi.inf_amd64_neutral_"));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers"));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync(
+                            $"{workingDirectory}\\acpi\\acpi.sys",
+                            $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository",
+                            "acpi.inf_amd64_neutral_"));
                     }
 
                     if (addDrivers)
@@ -117,14 +122,15 @@ namespace SevenUpdater
 
                     if (_appSettings.IncludeUpdates)
                     {
-                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, $"{workingDirectory}\\temp", 1, true, ct));
+                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources", installWimPath, $"{workingDirectory}\\temp", 1, true, ct));
                     }
 
                     CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
                     CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
                     CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
 
-                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources\\install.wim"));
+                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources"));
+                    //CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{win7WorkingDirectory}\\sources\\*.clg", $"{win10WorkingDirectory}\\sources"));
                     CommandQueue.EnqueueCommand(ct => IsoHelper.CreateIsoWithOcdimgAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "AMDSEVEN", ct));
                     CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
                 };
@@ -254,31 +260,28 @@ namespace SevenUpdater
                         string progress = percentageMatch.Value;
 
                         string currentText = TextBoxLog.Text;
+                        string[] lines = currentText.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
-                        int lastProgressIndex = currentText.LastIndexOf("[DISM]: [");
-
-                        if (lastProgressIndex != -1)
+                        // Check if the last line is a progress line
+                        if (lines.Length > 0 && lines[lines.Length - 1].Contains("[DISM]: ["))
                         {
-                            int lineStartIndex = currentText.LastIndexOf(Environment.NewLine, lastProgressIndex);
-                            if (lineStartIndex == -1) lineStartIndex = 0;
-
-                            string textBeforeProgress = currentText.Substring(0, lineStartIndex);
-
-                            string updatedText = $"{textBeforeProgress}{Environment.NewLine}[{timestamp}] [DISM]: [{progress}] {Environment.NewLine}";
-
-                            TextBoxLog.Text = updatedText;
+                            // Replace only the last line
+                            lines[lines.Length - 1] = $"[{timestamp}] [DISM]: [{progress}]";
                         }
                         else
                         {
-                            TextBoxLog.AppendText($"[{timestamp}] [DISM]: [{progress}] {Environment.NewLine}");
+                            // Append new progress line
+                            var newLine = $"[{timestamp}] [DISM]: [{progress}]";
+                            lines = lines.Concat(new[] { newLine }).ToArray();
                         }
 
+                        TextBoxLog.Text = string.Join(Environment.NewLine, lines);
                         TextBoxLog.ScrollToEnd();
                     }
                 }
                 else
                 {
-                    string text = $"[{timestamp}] {message}{Environment.NewLine}";
+                    string text = $"{Environment.NewLine}[{timestamp}] {message}";
                     TextBoxLog.AppendText(text);
                     TextBoxLog.ScrollToEnd();
 
@@ -292,7 +295,6 @@ namespace SevenUpdater
                 }
             });
         }
-
 
         private void ExitApplication()
         {
@@ -333,24 +335,24 @@ namespace SevenUpdater
 
         private void AdonisWindow_Initialized(object sender, EventArgs e)
         {
+            if (_appSettings.WindowLeft == -1 || _appSettings.WindowTop == -1)
+            {
+                return;
+            }
+
             WindowStartupLocation = WindowStartupLocation.Manual;
 
-            // Get the current screen bounds
             System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(this).Handle);
-            // Replace the existing code with the following code
             System.Drawing.Rectangle screenBounds = screen.Bounds;
 
-            // Check if the saved window position is outside the screen bounds
             if (_appSettings.WindowLeft < screenBounds.Left || _appSettings.WindowLeft + Width > screenBounds.Right ||
                 _appSettings.WindowTop < screenBounds.Top || _appSettings.WindowTop + Height > screenBounds.Bottom)
             {
-                // Reset the window position to a default value
                 Left = (screenBounds.Width - Width) / 2 + screenBounds.Left;
                 Top = (screenBounds.Height - Height) / 2 + screenBounds.Top;
             }
             else
             {
-                // Set the window position to the saved values
                 Left = _appSettings.WindowLeft;
                 Top = _appSettings.WindowTop;
             }
