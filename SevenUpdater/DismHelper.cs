@@ -190,7 +190,7 @@ namespace SevenUpdater
         public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
         {
             string recurseOption = recurse ? "/Recurse" : string.Empty;
-            string arguments = $"/Image:\"{imagePath}\" /Add-Driver /Driver:\"{driverPath}\" {recurseOption} /forceunsigned";
+            string arguments = $"/Image:\"{imagePath}\" /Add-Driver /Driver:\"{driverPath}\" {recurseOption} /forceunsigned /logpath:\"{driverPath}\\drivers.log\"";
             ExecuteDismCommand(arguments, "Add Driver");
         }
 

@@ -61,6 +61,14 @@ namespace SevenUpdater
                             Log($"Process {Path.GetFileName(path)} was cancelled.");
                             return;
                         }
+                        Thread.Sleep(100); // Prevents busy-waiting
+                    }
+
+                    // Ensure process is killed if still running (shouldn't be, but for safety)
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                        Log($"Process {Path.GetFileName(path)} was killed after finishing.");
                     }
                 }
                 Log($"Finished: {Path.GetFileName(path)}");
@@ -115,6 +123,7 @@ namespace SevenUpdater
                     process.Start();
                     process.WaitForExit();
                     Log($"Finished: {Path.GetFileName(path)}");
+
                 }
             }
             else

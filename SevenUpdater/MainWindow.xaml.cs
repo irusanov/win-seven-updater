@@ -67,72 +67,91 @@ namespace SevenUpdater
 
                 ButtonStart.Click += (s, e) =>
                 {
-                    if (_isActionRunning) return;
-
-                    _isActionRunning = true;
-                    SetButtonsEnabled(false);
-
-                    var win7IsoPath = _appSettings.Windows7IsoPath;
-                    var win10IsoPath = _appSettings.Windows10IsoPath;
-                    var workingDirectory = _appSettings.WorkingDirectory;
-                    var outputDirectory = String.IsNullOrEmpty(_appSettings.OutputDirectory) ? workingDirectory : _appSettings.OutputDirectory;
-                    var win7WorkingDirectory = $"{workingDirectory}\\win7";
-                    var win10WorkingDirectory = $"{workingDirectory}\\win10";
-                    var installWimPath = $"{win7WorkingDirectory}\\sources\\install.wim";
-                    var mountDirectory = $"{workingDirectory}\\offline";
-                    var isoLabel = _appSettings.IsoLabel;
-                    bool addDrivers = ComboBoxDriversDirectory.SelectedIndex > 0;
-
-                    var driversPath = (ComboBoxDriversDirectory.SelectedItem as CustomComboBoxItem)?.FullPath ?? "";
-
-                    if (_appSettings.CheckForUpdaterPackUpdates)
+                    try
                     {
-                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackCheckAsync("updates\\UpdatePack7R2+.exe", ct));
+                        if (_isActionRunning) return;
+
+                        _isActionRunning = true;
+                        SetButtonsEnabled(false);
+
+                        var win7IsoPath = _appSettings.Windows7IsoPath;
+                        var win10IsoPath = _appSettings.Windows10IsoPath;
+                        var workingDirectory = _appSettings.WorkingDirectory;
+                        var outputDirectory = String.IsNullOrEmpty(_appSettings.OutputDirectory) ? workingDirectory : _appSettings.OutputDirectory;
+                        var win7WorkingDirectory = $"{workingDirectory}\\win7";
+                        var win10WorkingDirectory = $"{workingDirectory}\\win10";
+                        var installWimPath = $"{win7WorkingDirectory}\\sources\\install.wim";
+                        var mountDirectory = $"{workingDirectory}\\offline";
+                        var isoLabel = _appSettings.IsoLabel;
+                        bool addDrivers = ComboBoxDriversDirectory.SelectedIndex > 0;
+
+                        var driversPath = (ComboBoxDriversDirectory.SelectedItem as CustomComboBoxItem)?.FullPath ?? "";
+
+                        if (!File.Exists(win7IsoPath))
+                        {
+                            throw new FileNotFoundException($"ISO file not found: {win7IsoPath}", win7IsoPath);
+                        }
+
+                        if (!File.Exists(win10IsoPath))
+                        {
+                            throw new FileNotFoundException($"ISO file not found: {win10IsoPath}", win10IsoPath);
+                        }
+
+                        if (_appSettings.CheckForUpdaterPackUpdates)
+                        {
+                            CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackCheckAsync("updates\\UpdatePack7R2+.exe", ct));
+                        }
+
+                        CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
+
+                        CommandQueue.EnqueueCommand(ct => DismHelper.ShowWimInfoDialogAsync(installWimPath, workingDirectory, ct));
+
+                        /*
+                        if (_appSettings.IncludeUpdates)
+                        {
+                            CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, true, ct));
+                        }
+                        */
+                        CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", false, ct));
+
+                        if (_appSettings.IncludeModdedAcpi)
+                        {
+                            CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync("acpi\\WIN7_A5_FIX_ACPI.7z", $"{workingDirectory}\\acpi", ct));
+                            CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers"));
+                            CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync(
+                                $"{workingDirectory}\\acpi\\acpi.sys",
+                                $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository",
+                                "acpi.inf_amd64_neutral_"));
+                        }
+
+                        if (addDrivers)
+                        {
+                            CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers", ct));
+                            CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
+                        }
+
+                        CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, true, ct));
+
+                        if (_appSettings.IncludeUpdates)
+                        {
+                            CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources", installWimPath, $"{workingDirectory}\\temp", 1, true, ct));
+                        }
+
+                        CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
+
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources"));
+                        //CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{win7WorkingDirectory}\\sources\\*.clg", $"{win10WorkingDirectory}\\sources"));
+                        CommandQueue.EnqueueCommand(ct => IsoHelper.CreateIsoWithOcdimgAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "AMDSEVEN", ct));
+                        CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
                     }
-
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win7IsoPath, win7WorkingDirectory, ct));
-
-                    CommandQueue.EnqueueCommand(ct => DismHelper.ShowWimInfoDialogAsync(installWimPath, workingDirectory, ct));
-
-                    /*
-                    if (_appSettings.IncludeUpdates)
+                    catch (Exception ex)
                     {
-                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources\\UpdatePack7R2.exe", installWimPath, 1, true, ct));
+                        Log(ex.Message);
+                        HandleError(ex.Message);
+                        _isActionRunning = false;
                     }
-                    */
-                    CommandQueue.EnqueueCommand(ct => DismHelper.MountImageAsync(installWimPath, mountDirectory, "1", false, ct));
-
-                    if (_appSettings.IncludeModdedAcpi)
-                    {
-                        CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync("acpi\\WIN7_A5_FIX_ACPI.7z", $"{workingDirectory}\\acpi", ct));
-                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{workingDirectory}\\acpi\\acpi.sys", $"{mountDirectory}\\Windows\\System32\\drivers"));
-                        CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileToProtectedFolderAsync(
-                            $"{workingDirectory}\\acpi\\acpi.sys",
-                            $"{mountDirectory}\\Windows\\System32\\DriverStore\\FileRepository",
-                            "acpi.inf_amd64_neutral_"));
-                    }
-
-                    if (addDrivers)
-                    {
-                        CommandQueue.EnqueueCommand(ct => FileUtils.ExtractArchiveAsync(driversPath, $"{workingDirectory}\\drivers", ct));
-                        CommandQueue.EnqueueCommand(ct => DismHelper.AddDriverAsync(mountDirectory, $"{workingDirectory}\\drivers", true, ct));
-                    }
-
-                    CommandQueue.EnqueueCommand(ct => DismHelper.UnmountImageAsync(mountDirectory, true, ct));
-
-                    if (_appSettings.IncludeUpdates)
-                    {
-                        CommandQueue.EnqueueCommand(ct => UpdatesHelper.RunUpdatePackAsync($"{win7WorkingDirectory}\\sources", installWimPath, $"{workingDirectory}\\temp", 1, true, ct));
-                    }
-
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.ExtractIsoAsync(win10IsoPath, win10WorkingDirectory, ct));
-                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.esd"));
-                    CommandQueue.EnqueueCommand(ct => FileUtils.DeleteFileAsync($"{win10WorkingDirectory}\\sources\\install.wim"));
-
-                    CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync(installWimPath, $"{win10WorkingDirectory}\\sources"));
-                    //CommandQueue.EnqueueCommand(ct => FileUtils.CopyFileAsync($"{win7WorkingDirectory}\\sources\\*.clg", $"{win10WorkingDirectory}\\sources"));
-                    CommandQueue.EnqueueCommand(ct => IsoHelper.CreateIsoWithOcdimgAsync(win10WorkingDirectory, $"{outputDirectory}\\output.iso", isoLabel ?? "AMDSEVEN", ct));
-                    CommandQueue.EnqueueCommand(ct => FileUtils.CleanupWorkingDirectory(win7WorkingDirectory));
                 };
 
                 ButtonCancel.Click += (s, e) =>
