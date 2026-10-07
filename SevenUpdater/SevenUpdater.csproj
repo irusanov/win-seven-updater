@@ -72,12 +72,6 @@
     <Reference Include="DiscUtils.Udf, Version=0.16.0.0, Culture=neutral, PublicKeyToken=5fa5b410cc9c6289, processorArchitecture=MSIL">
       <HintPath>..\packages\DiscUtils.Udf.0.16.13\lib\net45\DiscUtils.Udf.dll</HintPath>
     </Reference>
-    <Reference Include="Material.Icons, Version=2.1.10.0, Culture=neutral, PublicKeyToken=34ed5903a64b4509, processorArchitecture=MSIL">
-      <HintPath>..\packages\Material.Icons.2.1.10\lib\netstandard2.0\Material.Icons.dll</HintPath>
-    </Reference>
-    <Reference Include="Material.Icons.WPF, Version=2.1.10.0, Culture=neutral, PublicKeyToken=34ed5903a64b4509, processorArchitecture=MSIL">
-      <HintPath>..\packages\Material.Icons.WPF.2.1.10\lib\net461\Material.Icons.WPF.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -117,13 +111,19 @@
     <Compile Include="FileUtils.cs" />
     <Compile Include="IsoHelper.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="PathIcon.cs" />
     <Compile Include="ProcessRunner.cs" />
     <Compile Include="ThemedMessageBox.cs" />
+    <Compile Include="ThemeManager.cs" />
     <Compile Include="ThemedWindow.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Themes\Icons.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Controls.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

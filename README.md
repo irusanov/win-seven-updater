@@ -37,3 +37,12 @@ acpi\WIN7_A5_FIX_ACPI.7z       Modded acpi.sys (optional)
 - **Clean** only deletes the app's own temporary folders (`win7`, `win10`, `offline`, `drivers`,
   `acpi`, `temp`) inside the working directory; other files there, such as created ISOs, are kept.
 - The ISO label is also the file name. Letters, digits, `_` and `-` only, up to 32 characters.
+- The sun/moon button in the title bar switches between the light and dark theme (remembered in `settings.xml`).
+
+## Icons
+
+Icons are vector geometries in `SevenUpdater\Themes\Icons.xaml` (one `<Geometry>` per icon, 24×24 coordinates),
+drawn by the small `PathIcon` element in the color of the surrounding text, e.g.
+`<local:PathIcon Data="{StaticResource IconDvd}" Width="20" Height="20" />`.
+To add one, copy the path data (`d` attribute) of a 24×24 SVG icon into a new `<Geometry>` entry.
+The bundled icons are from [Material Design Icons](https://pictogrammers.com/library/mdi/) (Apache License 2.0).

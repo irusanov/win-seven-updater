@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -9,6 +10,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shell;
 
 namespace SevenUpdater
@@ -24,7 +27,9 @@ namespace SevenUpdater
         private readonly AppSettings _appSettings = new AppSettings().Load();
         private string _baseTitle;
         private bool _closeRequested;
-        private bool _logHasText;
+        private const int MaxLogEntries = 20000;
+
+        private readonly ObservableCollection<LogEntry> _logEntries = new ObservableCollection<LogEntry>();
         private int _stepNumber;
         private int _stepCount;
         private string _stepName;
@@ -54,7 +59,15 @@ namespace SevenUpdater
         {
             try
             {
+                // Apply the saved theme before the window is built, so it does not flash in the default one.
+                ThemeManager.Apply(_appSettings.Theme);
+                ThemeManager.ThemeChanged += OnThemeChanged;
+
                 InitializeComponent();
+
+                ListBoxLog.ItemsSource = _logEntries;
+                ListBoxLog.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CopySelectedLogLines(), (s, e) => e.CanExecute = ListBoxLog.SelectedItems.Count > 0));
+                MenuItemOpenLogFile.Click += (s, e) => ExecuteSafe(OpenLogFile);
                 _baseTitle = Title;
 
                 DataContext = _appSettings;
@@ -130,7 +143,7 @@ namespace SevenUpdater
 
                 _appSettings.Save();
 
-                Logger.Log("========== Build started ==========");
+                Logger.Step("========== Build started ==========");
                 Logger.Log($"Windows 7 ISO:  {options.Win7IsoPath}");
                 Logger.Log($"Windows 10 ISO: {options.Win10IsoPath}");
                 Logger.Log($"Working dir:    {options.Paths.Root}");
@@ -153,7 +166,9 @@ namespace SevenUpdater
                     SetBusy(false);
                 }
 
-                Logger.Log($"========== Build {result.ToString().ToLowerInvariant()} after {FormatDuration(stopwatch.Elapsed)} ==========");
+                Logger.Log(
+                    $"========== Build {result.ToString().ToLowerInvariant()} after {FormatDuration(stopwatch.Elapsed)} ==========",
+                    result == PipelineResult.Completed ? LogLevel.Success : result == PipelineResult.Canceled ? LogLevel.Warning : LogLevel.Error);
                 ShowResult(result, options.OutputIsoPath);
             }
             catch (Exception ex)
@@ -632,15 +647,97 @@ namespace SevenUpdater
             TextBlockStatus.Text = status;
         }
 
-        private void OnMessageLogged(string line)
+        private void OnMessageLogged(LogEntry entry)
         {
-            // BeginInvoke-style: tool output threads must never wait for the UI.
-            Dispatcher.InvokeAsync(() =>
+            // Tool output threads must never wait for the UI.
+            Dispatcher.InvokeAsync(() => AppendLogEntry(entry));
+        }
+
+        private void AppendLogEntry(LogEntry entry)
+        {
+            ScrollViewer scrollViewer = GetLogScrollViewer();
+            bool followTail = scrollViewer == null || scrollViewer.VerticalOffset >= scrollViewer.ScrollableHeight - 2;
+
+            _logEntries.Add(entry);
+            if (_logEntries.Count > MaxLogEntries)
             {
-                TextBoxLog.AppendText(_logHasText ? Environment.NewLine + line : line);
-                _logHasText = true;
-                TextBoxLog.ScrollToEnd();
-            });
+                // The complete log is still in output.log.
+                for (int i = 0; i < 1000; i++)
+                {
+                    _logEntries.RemoveAt(0);
+                }
+            }
+
+            // Only auto-scroll when the user has not scrolled up to read something.
+            if (followTail)
+            {
+                if (scrollViewer != null)
+                {
+                    scrollViewer.ScrollToEnd();
+                }
+                else
+                {
+                    ListBoxLog.ScrollIntoView(entry);
+                }
+            }
+        }
+
+        private ScrollViewer GetLogScrollViewer()
+        {
+            // Not cached: switching the theme re-applies the ListBox template.
+            return FindDescendant<ScrollViewer>(ListBoxLog);
+        }
+
+        private static T FindDescendant<T>(DependencyObject parent) where T : DependencyObject
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                T match = child as T ?? FindDescendant<T>(child);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+            return null;
+        }
+
+        private void CopySelectedLogLines()
+        {
+            List<LogEntry> selected = ListBoxLog.SelectedItems
+                .Cast<LogEntry>()
+                .OrderBy(entry => _logEntries.IndexOf(entry))
+                .ToList();
+            if (selected.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                Clipboard.SetText(string.Join(Environment.NewLine, selected.Select(entry => entry.Text)));
+            }
+            catch (Exception ex)
+            {
+                // The clipboard can be locked by another application.
+                Logger.Warn("Could not copy to the clipboard: " + ex.Message);
+            }
+        }
+
+        private static void OpenLogFile()
+        {
+            if (!File.Exists(AppPaths.LogFile))
+            {
+                ShowError("The log file does not exist yet.");
+                return;
+            }
+            Process.Start(new ProcessStartInfo(AppPaths.LogFile) { UseShellExecute = true });
+        }
+
+        private void OnThemeChanged(string theme)
+        {
+            _appSettings.Theme = theme;
         }
 
         #endregion
@@ -850,6 +947,7 @@ namespace SevenUpdater
             _appSettings?.Save();
 
             Logger.MessageLogged -= OnMessageLogged;
+            ThemeManager.ThemeChanged -= OnThemeChanged;
             Logger.ProgressChanged -= OnProgressChanged;
             CommandQueue.StepStarted -= OnStepStarted;
         }

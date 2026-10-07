@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
         xmlns:local="clr-namespace:SevenUpdater"
         mc:Ignorable="d"
         BorderThickness="1"
@@ -12,6 +11,7 @@
         Icon="pack://application:,,,/Assets/Icon.ico"
         SizeToContent="Width"
         ResizeMode="CanMinimize"
+        ShowThemeToggle="True"
         Title="Seven Updater v1.0" Height="600" Width="862" Closing="Window_Closing" Initialized="Window_Initialized">
     <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="5">
         <Grid>
@@ -61,7 +61,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
-                                <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconDvd}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelWindows7IsoPath" Content="Windows 7/2008 Server ISO Path" Margin="5" Target="{Binding ElementName=TextBoxWindows7IsoPath}" />
                             </StackPanel>
                             <TextBox x:Name="TextBoxWindows7IsoPath" Grid.Column="0" Grid.Row="1" Margin="5,2,5,2" Text="{Binding Windows7IsoPath, UpdateSourceTrigger=PropertyChanged}"
@@ -69,7 +69,7 @@
                             <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5,2,5,2" />
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
-                                <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconDvd}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelWindows10IsoPath" Content="Windows 10 ISO Path" Margin="5" Target="{Binding ElementName=TextBoxWindows10IsoPath}" />
                             </StackPanel>
                             <TextBox x:Name="TextBoxWindows10IsoPath" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding Windows10IsoPath, UpdateSourceTrigger=PropertyChanged}"
@@ -77,7 +77,7 @@
                             <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,2,5,2" />
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4">
-                                <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconFolderOutline}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelWorkingDirectory" Content="Working Directory" Margin="5" Target="{Binding ElementName=TextBoxWorkingDirectory}" />
                             </StackPanel>
                             <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" Margin="5,2,5,2" Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}"
@@ -85,7 +85,7 @@
                             <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,2,5,2" />
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
-                                <materialIcons:MaterialIcon Kind="NetworkInterfaceCard" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconNetworkInterfaceCard}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" Target="{Binding ElementName=ComboBoxDriversDirectory}" />
                             </StackPanel>
                             <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,2,5,2" Grid.ColumnSpan="2" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged"
@@ -116,14 +116,14 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
-                                <materialIcons:MaterialIcon Kind="TextBoxEditOutline" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconTextBoxEditOutline}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelIsoLabel" Content="ISO Label" Margin="5" Target="{Binding ElementName=TextBoxIsoLabel}" />
                             </StackPanel>
                             <TextBox x:Name="TextBoxIsoLabel" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Margin="5,2,5,2" MaxLength="32" Text="{Binding IsoLabel, UpdateSourceTrigger=PropertyChanged}"
                                      ToolTip="Volume label of the ISO, also used as file name (&lt;label&gt;.iso). Letters, digits, '_' and '-' only, max. 32 characters." />
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
-                                <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
+                                <local:PathIcon Data="{StaticResource IconFolderOutline}" Width="20" Height="20" Margin="5 0 0 0" />
                                 <Label x:Name="LabelOutputDirectory" Content="Output Directory" Margin="5" Target="{Binding ElementName=TextBoxOutputDirectory}" />
                             </StackPanel>
                             <TextBox x:Name="TextBoxOutputDirectory" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
@@ -140,10 +140,69 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBox x:Name="TextBoxLog" Grid.Row="0" IsReadOnly="True" IsReadOnlyCaretVisible="True" TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                         VerticalContentAlignment="Top" HorizontalContentAlignment="Left"
-                         FontFamily="Consolas" FontSize="11" />
+                <ListBox x:Name="ListBoxLog" Grid.Row="0"
+                         SelectionMode="Extended"
+                         FontFamily="Consolas" FontSize="11"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.VirtualizationMode="Recycling"
+                         VirtualizingPanel.ScrollUnit="Pixel">
+                    <ListBox.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Copy" Command="ApplicationCommands.Copy" InputGestureText="Ctrl+C">
+                                <MenuItem.Icon>
+                                    <local:PathIcon Data="{StaticResource IconContentCopy}" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Select all" Command="ApplicationCommands.SelectAll" InputGestureText="Ctrl+A" />
+                            <Separator />
+                            <MenuItem x:Name="MenuItemOpenLogFile" Header="Open log file">
+                                <MenuItem.Icon>
+                                    <local:PathIcon Data="{StaticResource IconFileDocumentOutline}" Width="14" Height="14" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:LogEntry}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="18" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LogTime" Grid.Column="0" Text="{Binding TimeText}" Margin="0,0,6,0" Opacity="0.6" />
+                                <local:PathIcon x:Name="LogIcon" Grid.Column="1" Width="12" Height="12" Margin="0,1,0,0"
+                                               HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Hidden" />
+                                <TextBlock x:Name="LogText" Grid.Column="2" Text="{Binding DisplayMessage}" TextWrapping="Wrap" />
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Level}" Value="Step">
+                                    <Setter TargetName="LogIcon" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="LogIcon" Property="Data" Value="{StaticResource IconChevronRightCircle}" />
+                                    <Setter TargetName="LogIcon" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="LogText" Property="FontWeight" Value="Bold" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Level}" Value="Success">
+                                    <Setter TargetName="LogIcon" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="LogIcon" Property="Data" Value="{StaticResource IconCheckCircle}" />
+                                    <Setter TargetName="LogIcon" Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                    <Setter TargetName="LogIcon" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="LogIcon" Property="Data" Value="{StaticResource IconAlert}" />
+                                    <Setter TargetName="LogIcon" Property="Foreground" Value="{DynamicResource AlertBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Level}" Value="Error">
+                                    <Setter TargetName="LogIcon" Property="Visibility" Value="Visible" />
+                                    <Setter TargetName="LogIcon" Property="Data" Value="{StaticResource IconCloseCircle}" />
+                                    <Setter TargetName="LogIcon" Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+                                    <Setter TargetName="LogText" Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
                 <Grid Grid.Row="1" Margin="0,6,0,0">
                     <Grid.RowDefinitions>

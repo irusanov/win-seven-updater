@@ -10,6 +10,13 @@ namespace SevenUpdater
     /// </summary>
     public class ThemedWindow : Window
     {
+        /// <summary>Shows the light/dark switch in the title bar.</summary>
+        public static readonly DependencyProperty ShowThemeToggleProperty = DependencyProperty.Register(
+            nameof(ShowThemeToggle),
+            typeof(bool),
+            typeof(ThemedWindow),
+            new PropertyMetadata(false));
+
         public ThemedWindow()
         {
             // Implicit styles are looked up by the concrete type (e.g. MainWindow), so point at the base style explicitly.
@@ -19,6 +26,13 @@ namespace SevenUpdater
             CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand, (s, e) => SystemCommands.MinimizeWindow(this)));
             CommandBindings.Add(new CommandBinding(SystemCommands.MaximizeWindowCommand, (s, e) => SystemCommands.MaximizeWindow(this)));
             CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, (s, e) => SystemCommands.RestoreWindow(this)));
+            CommandBindings.Add(new CommandBinding(ThemeManager.ToggleThemeCommand, (s, e) => ThemeManager.Toggle()));
+        }
+
+        public bool ShowThemeToggle
+        {
+            get => (bool)GetValue(ShowThemeToggleProperty);
+            set => SetValue(ShowThemeToggleProperty, value);
         }
 
         protected override void OnContentRendered(EventArgs e)

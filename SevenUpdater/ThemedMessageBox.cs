@@ -1,6 +1,4 @@
-﻿using Material.Icons;
-using Material.Icons.WPF;
-using System;
+﻿using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -62,7 +60,7 @@ namespace SevenUpdater
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            MaterialIcon iconElement = CreateIcon(icon);
+            PathIcon iconElement = CreateIcon(icon);
             if (iconElement != null)
             {
                 body.Children.Add(iconElement);
@@ -157,40 +155,40 @@ namespace SevenUpdater
             }
         }
 
-        private static MaterialIcon CreateIcon(MessageBoxImage image)
+        private static PathIcon CreateIcon(MessageBoxImage image)
         {
-            MaterialIconKind kind;
+            string iconKey;
             string brushKey;
             switch (image)
             {
                 case MessageBoxImage.Error:
-                    kind = MaterialIconKind.CloseCircle;
+                    iconKey = "IconCloseCircle";
                     brushKey = "ErrorBrush";
                     break;
                 case MessageBoxImage.Warning:
-                    kind = MaterialIconKind.Alert;
+                    iconKey = "IconAlert";
                     brushKey = "AlertBrush";
                     break;
                 case MessageBoxImage.Question:
-                    kind = MaterialIconKind.HelpCircle;
+                    iconKey = "IconHelpCircle";
                     brushKey = "AccentBrush";
                     break;
                 case MessageBoxImage.Information:
-                    kind = MaterialIconKind.Information;
+                    iconKey = "IconInformation";
                     brushKey = "AccentBrush";
                     break;
                 default:
                     return null;
             }
 
-            var icon = new MaterialIcon
+            var icon = new PathIcon
             {
-                Kind = kind,
                 Width = 32,
                 Height = 32,
                 VerticalAlignment = VerticalAlignment.Top,
             };
-            icon.SetResourceReference(Control.ForegroundProperty, brushKey);
+            icon.SetResourceReference(PathIcon.DataProperty, iconKey);
+            icon.SetResourceReference(PathIcon.ForegroundProperty, brushKey);
             return icon;
         }
     }

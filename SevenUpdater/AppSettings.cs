@@ -236,6 +236,21 @@ namespace SevenUpdater
             }
         }
 
+        private string theme = "Light";
+        /// <summary>"Light" or "Dark"; switched with the button in the title bar.</summary>
+        public string Theme
+        {
+            get => theme;
+            set
+            {
+                if (theme != value)
+                {
+                    theme = value;
+                    OnPropertyChanged(nameof(Theme));
+                }
+            }
+        }
+
         public AppSettings() { }
 
         public AppSettings Create()
@@ -282,6 +297,7 @@ namespace SevenUpdater
             loaded.Drivers = loaded.Drivers ?? string.Empty;
             loaded.IsoLabel = string.IsNullOrWhiteSpace(loaded.IsoLabel) ? "AMDSEVEN" : loaded.IsoLabel.Trim();
             loaded.SelectedEdition = loaded.SelectedEdition ?? string.Empty;
+            loaded.Theme = string.IsNullOrWhiteSpace(loaded.Theme) ? "Light" : loaded.Theme;
             loaded.Version = $"{VERSION_MAJOR}.{VERSION_MINOR}";
             return loaded;
         }
