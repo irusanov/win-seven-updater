@@ -11,7 +11,7 @@ namespace SevenUpdater
         private const int VERSION_MAJOR = 1;
         private const int VERSION_MINOR = 0;
 
-        private const string filename = "settings.xml";
+        private static string filename => AppPaths.SettingsFile;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -221,6 +221,21 @@ namespace SevenUpdater
 
 
 
+        private string selectedEdition = string.Empty;
+        /// <summary>Last Windows 7 edition picked from install.wim; preselected next time.</summary>
+        public string SelectedEdition
+        {
+            get => selectedEdition;
+            set
+            {
+                if (selectedEdition != value)
+                {
+                    selectedEdition = value;
+                    OnPropertyChanged(nameof(SelectedEdition));
+                }
+            }
+        }
+
         public AppSettings() { }
 
         public AppSettings Create()
@@ -233,32 +248,42 @@ namespace SevenUpdater
 
         public AppSettings Load()
         {
-            if (File.Exists(filename))
-            {
-                using (StreamReader sr = new StreamReader(filename))
-                {
-                    try
-                    {
-                        XmlSerializer xmls = new XmlSerializer(typeof(AppSettings));
-                        return xmls.Deserialize(sr) as AppSettings;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        sr.Close();
-                        MessageBox.Show(
-                            "Invalid settings file!\nSettings will be reset to defaults.",
-                            "Error",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-                        return Create();
-                    }
-                }
-            }
-            else
+            if (!File.Exists(filename))
             {
                 return Create();
             }
+
+            AppSettings loaded = null;
+            try
+            {
+                using (StreamReader sr = new StreamReader(filename))
+                {
+                    XmlSerializer xmls = new XmlSerializer(typeof(AppSettings));
+                    loaded = xmls.Deserialize(sr) as AppSettings;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            if (loaded == null)
+            {
+                // The reader is closed at this point, so the defaults can be written back.
+                MessageBox.Show(
+                    "Invalid settings file!\nSettings will be reset to defaults.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return Create();
+            }
+
+            // Older or hand-edited files can contain empty elements.
+            loaded.Drivers = loaded.Drivers ?? string.Empty;
+            loaded.IsoLabel = string.IsNullOrWhiteSpace(loaded.IsoLabel) ? "AMDSEVEN" : loaded.IsoLabel.Trim();
+            loaded.SelectedEdition = loaded.SelectedEdition ?? string.Empty;
+            loaded.Version = $"{VERSION_MAJOR}.{VERSION_MINOR}";
+            return loaded;
         }
 
         public void Save()
@@ -274,7 +299,7 @@ namespace SevenUpdater
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Could not save settings to file!",
+                    "Could not save settings to file!\n" + ex.Message,
                     "Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

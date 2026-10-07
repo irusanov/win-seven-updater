@@ -5,72 +5,122 @@ using System.Threading.Tasks;
 
 namespace SevenUpdater
 {
-    public static class CommandQueue
+    internal sealed class PipelineStep
     {
-        private static readonly Queue<Func<CancellationToken, Task>> _commands = new Queue<Func<CancellationToken, Task>>();
-        private static CancellationTokenSource _cts = new CancellationTokenSource();
-        private static bool _isProcessing = false;
-        public static event Action OnQueueCompleted;
-
-        public static void EnqueueCommand(Func<CancellationToken, Task> command)
+        public PipelineStep(string name, Func<CancellationToken, Task> action)
         {
-            lock (_commands)
-            {
-                _commands.Enqueue(command);
-                if (!_isProcessing)
-                {
-                    _isProcessing = true;
-                    _ = ProcessQueue();
-                }
-            }
+            Name = name;
+            Action = action;
         }
 
-        private static async Task ProcessQueue()
-        {
-            while (true)
-            {
-                Func<CancellationToken, Task> command;
-                lock (_commands)
-                {
-                    if (_commands.Count == 0)
-                    {
-                        _isProcessing = false;
-                        OnQueueCompleted?.Invoke();
-                        return;
-                    }
-                    command = _commands.Dequeue();
-                }
+        public string Name { get; }
+        public Func<CancellationToken, Task> Action { get; }
+    }
 
+    internal enum PipelineResult
+    {
+        Completed,
+        Canceled,
+        Failed
+    }
+
+    /// <summary>
+    /// Runs a list of steps one after another.
+    /// The previous queue could start a second processing loop while a cancelled command was still
+    /// running (e.g. "unmount" started during a mount), raised completion twice, and never stopped
+    /// the running DISM/UpdatePack process. Now a run is a single awaited task: cancelling kills the
+    /// running tool, and an optional clean-up callback runs once the step has actually stopped.
+    /// </summary>
+    internal static class CommandQueue
+    {
+        private static CancellationTokenSource _cts;
+
+        public static bool IsRunning => _cts != null;
+
+        public static Exception LastError { get; private set; }
+
+        /// <summary>Raised on the calling (UI) thread: step number (1-based), step count, step name.</summary>
+        public static event Action<int, int, string> StepStarted;
+
+        public static async Task<PipelineResult> RunAsync(IList<PipelineStep> steps, Func<Task> cleanupOnAbort = null)
+        {
+            if (_cts != null)
+            {
+                throw new InvalidOperationException("Another operation is already running.");
+            }
+
+            _cts = new CancellationTokenSource();
+            CancellationToken token = _cts.Token;
+            LastError = null;
+            PipelineResult result = PipelineResult.Completed;
+
+            try
+            {
+                for (int i = 0; i < steps.Count; i++)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    PipelineStep step = steps[i];
+                    StepStarted?.Invoke(i + 1, steps.Count, step.Name);
+                    Logger.Log($"--- Step {i + 1}/{steps.Count}: {step.Name} ---");
+                    Logger.ReportProgress(null);
+
+                    // Always run off the UI thread: ISO extraction and file copies are synchronous
+                    // under the hood and used to freeze the window.
+                    await Task.Run(() => step.Action(token), token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                result = PipelineResult.Canceled;
+                Logger.Warn("Operation canceled.");
+            }
+            catch (Exception ex)
+            {
+                result = PipelineResult.Failed;
+                LastError = ex;
+                Logger.Error(Logger.Describe(ex));
+            }
+
+            if (result != PipelineResult.Completed && cleanupOnAbort != null)
+            {
                 try
                 {
-                    if (_isProcessing)
-                    {
-                        await command(_cts.Token);
-                    }
+                    await Task.Run(cleanupOnAbort);
                 }
                 catch (Exception ex)
                 {
-                    DismHelper.Log($"Error executing command: {ex.Message}");
-                    CancelQueue();
-                    return;
+                    Logger.Warn("Clean-up after abort failed: " + Logger.Describe(ex));
                 }
             }
+
+            _cts.Dispose();
+            _cts = null;
+            Logger.ReportProgress(null);
+            return result;
         }
 
-        public static void CancelQueue()
+        public static void Cancel()
         {
-            if (_isProcessing)
+            CancellationTokenSource cts = _cts;
+            if (cts == null || cts.IsCancellationRequested)
             {
-                _isProcessing = false;
-                _cts.Cancel();
-                _cts = new CancellationTokenSource();
-                lock (_commands)
-                {
-                    _commands.Clear();
-                }
-                OnQueueCompleted?.Invoke();
-                DismHelper.Log("Queue canceled.");
+                return;
             }
+
+            Logger.Log("Cancel requested, stopping the current step...");
+            // Cancellation callbacks kill processes and may block for a moment; keep the UI responsive.
+            Task.Run(() =>
+            {
+                try
+                {
+                    cts.Cancel();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Run finished in the meantime.
+                }
+            });
         }
     }
 }

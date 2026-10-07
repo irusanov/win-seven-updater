@@ -16,108 +16,148 @@
         UseLayoutRounding="True"
         SizeToContent="Width"
         ResizeMode="CanMinimize"
-        Title="Seven Updater v1.0" Height="576" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded" Initialized="AdonisWindow_Initialized">
+        Title="Seven Updater v1.0" Height="600" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded" Initialized="AdonisWindow_Initialized">
     <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="5">
-        <StackPanel Orientation="Horizontal">
-            <StackPanel Orientation="Vertical" Width="340">
-                <GroupBox Header="Input" Margin="5">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
-                            <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelWindows7IsoPath" Content="Windows 7/2008 Server ISO Path" Margin="5" />
-                        </StackPanel>
-                        <TextBox x:Name="TextBoxWindows7IsoPath" Grid.Column="0" Grid.Row="1" Margin="5,2,5,2" Text="{Binding Windows7IsoPath, Mode=TwoWay}" />
-                        <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5,2,5,2" Grid.ColumnSpan="3" />
+            <DockPanel Grid.Column="0" LastChildFill="False">
+                <Grid DockPanel.Dock="Bottom">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition Width="*"></ColumnDefinition>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                        <ColumnDefinition Width="auto"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ButtonCleanup" Content="Clean" Margin="5" Grid.Column="0" MinWidth="60"
+                            ToolTip="Unmount a leftover image and delete the temporary folders (win7, win10, offline, drivers, acpi, temp) from the working directory. Other files, including created ISOs, are kept." />
+                    <Button x:Name="ButtonOpenOutput" Content="Open output" Margin="5" Grid.Column="1" MinWidth="60"
+                            ToolTip="Open the output directory in Explorer" />
+                    <Button x:Name="ButtonCancel" Content="Cancel" Margin="5" Grid.Column="3" MinWidth="60" IsEnabled="False"
+                            ToolTip="Stop the running operation. A mounted image is unmounted and its changes are discarded." />
+                    <Button x:Name="ButtonStart" Content="Start" Margin="5" Grid.Column="4" MinWidth="60" Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}"
+                            ToolTip="Build the Windows 7 ISO" />
+                </Grid>
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
-                            <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelWindows10IsoPath" Content="Windows 10 ISO Path" Margin="5" />
-                        </StackPanel>
-                        <TextBox x:Name="TextBoxWindows10IsoPath" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding Windows10IsoPath}" />
-                        <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,2,5,2" Grid.ColumnSpan="3" />
+                <StackPanel x:Name="PanelSettings" DockPanel.Dock="Top" Orientation="Vertical">
+                    <GroupBox Header="Input" Margin="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                            </Grid.RowDefinitions>
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4">
-                            <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelWorkingDirectory" Content="Working Directory" Margin="5" />
-                        </StackPanel>
-                        <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" Margin="5,2,5,2" Text="{Binding WorkingDirectory}" />
-                        <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,2,5,2" Grid.ColumnSpan="3" />
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
+                                <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelWindows7IsoPath" Content="Windows 7/2008 Server ISO Path" Margin="5" Target="{Binding ElementName=TextBoxWindows7IsoPath}" />
+                            </StackPanel>
+                            <TextBox x:Name="TextBoxWindows7IsoPath" Grid.Column="0" Grid.Row="1" Margin="5,2,5,2" Text="{Binding Windows7IsoPath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Windows 7 SP1 x64 installation ISO. Its install.wim is updated and moved into the Windows 10 installer." />
+                            <Button x:Name="ButtonBrowse" Grid.Column="1" Grid.Row="1" Content="Browse" Margin="5,2,5,2" />
 
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
-                            <materialIcons:MaterialIcon Kind="NetworkInterfaceCard" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" />
-                        </StackPanel>
-                        <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,2,5,2" Grid.ColumnSpan="4" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged" />
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
+                                <materialIcons:MaterialIcon Kind="Dvd" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelWindows10IsoPath" Content="Windows 10 ISO Path" Margin="5" Target="{Binding ElementName=TextBoxWindows10IsoPath}" />
+                            </StackPanel>
+                            <TextBox x:Name="TextBoxWindows10IsoPath" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding Windows10IsoPath, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Windows 10 installation ISO. Its setup and boot files (UEFI + BIOS) are used for the new ISO." />
+                            <Button x:Name="ButtonBrowseWin10" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,2,5,2" />
 
-                        <CheckBox x:Name="CheckBoxIncludeUpdates" Grid.Column="0" Grid.Row="8" Margin="5,2,5,2" Content="Include updates" IsChecked="{Binding IncludeUpdates}" />
-                        <CheckBox x:Name="CheckBoxCheckForUpdates" Grid.Column="0" Grid.Row="9" Margin="5,2,5,2" Content="Check for UpdaterPack updates" IsChecked="{Binding CheckForUpdaterPackUpdates}" />
-                        <CheckBox x:Name="CheckBoxIncludeModdedAcpi" Grid.Column="0" Grid.Row="10" Margin="5,2,5,2" Content="Include modded acpi.sys" IsChecked="{Binding IncludeModdedAcpi}" />
-                    </Grid>
-                </GroupBox>
-                
-                <GroupBox Header="Output" Margin="5">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="4">
+                                <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelWorkingDirectory" Content="Working Directory" Margin="5" Target="{Binding ElementName=TextBoxWorkingDirectory}" />
+                            </StackPanel>
+                            <TextBox x:Name="TextBoxWorkingDirectory" Grid.Column="0" Grid.Row="5" Margin="5,2,5,2" Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Temporary files are created here (about 30 GB free space recommended)." />
+                            <Button x:Name="ButtonBrowseWorkingDirectory" Grid.Column="1" Grid.Row="5" Content="Browse" Margin="5,2,5,2" />
 
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                            <RowDefinition Height="auto"></RowDefinition>
-                        </Grid.RowDefinitions>
-                        
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
-                            <materialIcons:MaterialIcon Kind="TextBoxEditOutline" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelIsoLabel" Content="ISO Label" Margin="5" />
-                        </StackPanel>
-                        <TextBox x:Name="TextBoxIsoLabel" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="4" Margin="5,2,5,2" Text="{Binding IsoLabel}" />
-                        
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
-                            <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
-                            <Label x:Name="LabelOutputDirectory" Content="Output Directory" Margin="5" />
-                        </StackPanel>
-                        <TextBox x:Name="TextBoxOutputDirectory" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding OutputDirectory}" />
-                        <Button x:Name="ButtonBrowseOutputDirectory" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,2,5,2" Grid.ColumnSpan="3" />
-                    </Grid>
-                </GroupBox>
-                
-                <Border VerticalAlignment="Bottom" Margin="0" Padding="0">
-                    <Grid VerticalAlignment="Bottom" Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                            <ColumnDefinition Width="auto"></ColumnDefinition>
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="ButtonCleanup" Content="Clean" Margin="5" Grid.Column="0" MinWidth="60" />
-                        <Button x:Name="ButtonCancel" Content="Cancel" Margin="5" Grid.Column="2" MinWidth="60" />
-                        <Button x:Name="ButtonStart" Content="Start" Margin="5" Grid.Column="3" MinWidth="60" Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}" />
-                    </Grid>
-                </Border>
-            </StackPanel>
-            <TextBox x:Name="TextBoxLog" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="5" Width="500" VerticalContentAlignment="Top" HorizontalContentAlignment="Left" FontSize="11" />
-        </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="6">
+                                <materialIcons:MaterialIcon Kind="NetworkInterfaceCard" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelDriversDirectory" Content="Drivers" Margin="5" Target="{Binding ElementName=ComboBoxDriversDirectory}" />
+                            </StackPanel>
+                            <ComboBox x:Name="ComboBoxDriversDirectory" Grid.Column="0" Grid.Row="7" Margin="5,2,5,2" Grid.ColumnSpan="2" SelectionChanged="ComboBoxDriversDirectory_SelectionChanged"
+                                      ToolTip="Driver pack from the 'drivers' folder next to the program, injected into the image." />
+
+                            <CheckBox x:Name="CheckBoxIncludeUpdates" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="8" Margin="5,2,5,2" Content="Include updates" IsChecked="{Binding IncludeUpdates}"
+                                      ToolTip="Integrate the newest UpdatePack7R2 from the 'updates' folder. This is the slowest step." />
+                            <CheckBox x:Name="CheckBoxCheckForUpdates" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="9" Margin="23,2,5,2" Content="Check for UpdatePack updates" IsChecked="{Binding CheckForUpdaterPackUpdates}"
+                                      IsEnabled="{Binding IncludeUpdates}"
+                                      ToolTip="Download the latest UpdatePack7R2 before integrating it." />
+                            <CheckBox x:Name="CheckBoxIncludeModdedAcpi" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="10" Margin="5,2,5,2" Content="Include modded acpi.sys" IsChecked="{Binding IncludeModdedAcpi}"
+                                      ToolTip="Replace acpi.sys in the image with the patched version from the 'acpi' folder (needed on many newer boards to avoid the 0xA5 ACPI boot error)." />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Header="Output" Margin="5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"></ColumnDefinition>
+                                <ColumnDefinition Width="auto"></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                                <RowDefinition Height="auto"></RowDefinition>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
+                                <materialIcons:MaterialIcon Kind="TextBoxEditOutline" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelIsoLabel" Content="ISO Label" Margin="5" Target="{Binding ElementName=TextBoxIsoLabel}" />
+                            </StackPanel>
+                            <TextBox x:Name="TextBoxIsoLabel" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Margin="5,2,5,2" MaxLength="32" Text="{Binding IsoLabel, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Volume label of the ISO, also used as file name (&lt;label&gt;.iso). Letters, digits, '_' and '-' only, max. 32 characters." />
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Grid.Row="2">
+                                <materialIcons:MaterialIcon Kind="FolderOutline" Height="20" Margin="5 0 0 0" />
+                                <Label x:Name="LabelOutputDirectory" Content="Output Directory" Margin="5" Target="{Binding ElementName=TextBoxOutputDirectory}" />
+                            </StackPanel>
+                            <TextBox x:Name="TextBoxOutputDirectory" Grid.Column="0" Grid.Row="3" Margin="5,2,5,2" Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Folder where the finished ISO is saved." />
+                            <Button x:Name="ButtonBrowseOutputDirectory" Grid.Column="1" Grid.Row="3" Content="Browse" Margin="5,2,5,2" />
+                        </Grid>
+                    </GroupBox>
+                </StackPanel>
+            </DockPanel>
+
+            <Grid Grid.Column="1" Width="500" Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBox x:Name="TextBoxLog" Grid.Row="0" IsReadOnly="True" IsReadOnlyCaretVisible="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                         VerticalContentAlignment="Top" HorizontalContentAlignment="Left"
+                         FontFamily="Consolas" FontSize="11" />
+
+                <Grid Grid.Row="1" Margin="0,6,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TextBlockStatus" Grid.Row="0" Text="Ready" TextTrimming="CharacterEllipsis" Margin="0,0,0,4" />
+                    <ProgressBar x:Name="ProgressBarStep" Grid.Row="1" Height="14" Minimum="0" Maximum="100" Value="0" />
+                </Grid>
+            </Grid>
+        </Grid>
     </Border>
 </adonisControls:AdonisWindow>

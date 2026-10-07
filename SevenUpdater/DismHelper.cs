@@ -1,17 +1,16 @@
 ﻿using AdonisUI.Controls;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using MessageBox = AdonisUI.Controls.MessageBox;
 
 namespace SevenUpdater
 {
-    internal class DismHelper
+    internal static class DismHelper
     {
         public enum ChecksumAlgorithm
         {
@@ -24,309 +23,220 @@ namespace SevenUpdater
             SHA512
         }
 
-        private static Action<string> _logAction;
-
-        public static void SetLogAction(Action<string> logAction)
-        {
-            _logAction = logAction;
-        }
-
-        public static void Log(string message)
-        {
-            _logAction?.Invoke(message);
-        }
-
-        private static void ExecuteDismCommand(string arguments, string description)
-        {
-            Log($"Starting: {description}");
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "dism.exe",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Verb = "runas"
-            };
-
-            using (var process = new Process { StartInfo = startInfo })
-            {
-                process.OutputDataReceived += (sender, e) => LogOutput(e.Data, "[DISM]");
-                process.ErrorDataReceived += (sender, e) => LogOutput(e.Data, "[DISM ERROR]");
-
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception($"DISM command failed with exit code {process.ExitCode}: {arguments}");
-                }
-            }
-            Log($"Completed: {description}\n");
-        }
-
-        private static void LogOutput(string data, string prefix)
-        {
-            if (!string.IsNullOrWhiteSpace(data))
-            {
-                Log($"{prefix}: {data}");
-            }
-        }
-
         public class DismImageInfo
         {
-            public string Index { get; set; }
+            public int Index { get; set; }
             public string Name { get; set; }
             public string Description { get; set; }
+
+            public override string ToString() => $"{Index}: {Name}";
         }
 
-        public static List<DismImageInfo> GetWimInfo(string wimFilePath)
+        private static Task RunDismAsync(string arguments, string description, CancellationToken cancellationToken)
         {
-            Log($"Retrieving WIM info for: {wimFilePath}");
-            var imageInfoList = new List<DismImageInfo>();
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "dism.exe",
-                Arguments = $"/Get-WimInfo /WimFile:\"{wimFilePath}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Verb = "runas"
-            };
-
-            using (var process = new Process { StartInfo = startInfo })
-            {
-                string index = null, name = null, description = null;
-
-                process.OutputDataReceived += (sender, e) =>
-                {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                    {
-                        Log(e.Data);
-
-                        if (e.Data.StartsWith("Index :"))
-                        {
-                            if (index != null && name != null && description != null)
-                            {
-                                imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
-                            }
-
-                            index = ExtractValue(e.Data, "Index :");
-                            name = null;
-                            description = null;
-                        }
-                        else if (e.Data.StartsWith("Name :"))
-                        {
-                            name = ExtractValue(e.Data, "Name :");
-                        }
-                        else if (e.Data.StartsWith("Description :"))
-                        {
-                            description = ExtractValue(e.Data, "Description :");
-                        }
-                    }
-                };
-
-                process.ErrorDataReceived += (sender, e) => LogOutput(e.Data, "[DISM ERROR]");
-
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-
-                if (index != null && name != null && description != null)
-                {
-                    imageInfoList.Add(new DismImageInfo { Index = index, Name = name, Description = description });
-                }
-
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception($"Failed to retrieve WIM info. Exit code: {process.ExitCode}");
-                }
-            }
-
-            Log($"Retrieved {imageInfoList.Count} images from WIM file.");
-            return imageInfoList;
+            Logger.Log($"Starting: {description}");
+            // /English keeps the output parseable and the log readable on localized Windows.
+            return RunAndLogCompletion(
+                ProcessRunner.RunCheckedAsync("dism.exe", "/English " + arguments, "DISM " + description, cancellationToken, line => Logger.LogTool("[DISM]", line)),
+                description);
         }
 
-        private static string ExtractValue(string input, string key)
+        private static async Task RunAndLogCompletion(Task task, string description)
         {
-            if (input.StartsWith(key))
-            {
-                return input.Substring(key.Length).Trim();
-            }
-            return null;
-        }
-
-        public static void MountImage(string imagePath, string mountPath, string index, bool optimize)
-        {
-            if (!Directory.Exists(mountPath))
-            {
-                Directory.CreateDirectory(mountPath);
-            }
-
-            string optimizeOption = optimize ? "/Optimize" : string.Empty;
-            string arguments = $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\" {optimizeOption}";
-            ExecuteDismCommand(arguments, "Mount Image");
-        }
-
-        public static void UnmountImage(string mountPath, bool commitChanges)
-        {
-            string commitOption = commitChanges ? "/Commit" : "/Discard";
-            string arguments = $"/Unmount-Image /MountDir:\"{mountPath}\" {commitOption}";
-            ExecuteDismCommand(arguments, "Unmount Image");
-        }
-
-        public static void DeleteImage(string imagePath, int index)
-        {
-            string arguments = $"/Delete-Image /ImageFile:\"{imagePath}\" /Index:{index} /CheckIntegrity";
-            ExecuteDismCommand(arguments, "Delete Image");
-        }
-
-        public static void AddDriver(string imagePath, string driverPath, bool recurse = false)
-        {
-            string recurseOption = recurse ? "/Recurse" : string.Empty;
-            string arguments = $"/Image:\"{imagePath}\" /Add-Driver /Driver:\"{driverPath}\" {recurseOption} /forceunsigned /logpath:\"{driverPath}\\drivers.log\"";
-            ExecuteDismCommand(arguments, "Add Driver");
-        }
-
-        public static async Task MountImageAsync(string imagePath, string mountPath, string index, bool optimize, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    MountImage(imagePath, mountPath, index, optimize);
-                }
-            }, cancellationToken);
-        }
-
-        public static async Task UnmountImageAsync(string mountPath, bool commitChanges, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    UnmountImage(mountPath, commitChanges);
-                }
-            }, cancellationToken);
-        }
-
-        public static async Task DeleteImageAsync(string imagePath, int index, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    DeleteImage(imagePath, index);
-                }
-            }, cancellationToken);
-        }
-
-        public static async Task AddDriverAsync(string imagePath, string driverPath, bool recurse, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    AddDriver(imagePath, driverPath, recurse);
-                }
-            }, cancellationToken);
+            await task.ConfigureAwait(false);
+            Logger.Log($"Completed: {description}");
         }
 
         public static async Task<List<DismImageInfo>> GetWimInfoAsync(string wimFilePath, CancellationToken cancellationToken)
         {
-            return await Task.Run(() =>
+            if (!File.Exists(wimFilePath))
             {
-                if (cancellationToken.IsCancellationRequested) return null;
-                return GetWimInfo(wimFilePath);
-            }, cancellationToken);
+                throw new FileNotFoundException($"install.wim not found: {wimFilePath}. Is this a Windows 7 installation ISO?", wimFilePath);
+            }
+
+            Logger.Log($"Reading editions from: {wimFilePath}");
+            var images = new List<DismImageInfo>();
+            DismImageInfo current = null;
+
+            Action<string> parse = line =>
+            {
+                string trimmed = line.Trim();
+                string value;
+                if (TryGetValue(trimmed, "Index", out value))
+                {
+                    int index;
+                    current = int.TryParse(value, out index) ? new DismImageInfo { Index = index } : null;
+                    if (current != null)
+                    {
+                        images.Add(current);
+                    }
+                }
+                else if (current != null && TryGetValue(trimmed, "Name", out value))
+                {
+                    current.Name = value;
+                }
+                else if (current != null && TryGetValue(trimmed, "Description", out value))
+                {
+                    current.Description = value;
+                }
+            };
+
+            await ProcessRunner.RunCheckedAsync(
+                "dism.exe",
+                $"/English /Get-WimInfo /WimFile:\"{wimFilePath}\"",
+                "DISM Get-WimInfo",
+                cancellationToken,
+                parse).ConfigureAwait(false);
+
+            foreach (DismImageInfo image in images)
+            {
+                if (string.IsNullOrEmpty(image.Name))
+                {
+                    image.Name = "Image " + image.Index;
+                }
+                Logger.Log($"  {image.Index}: {image.Name}");
+            }
+
+            return images;
         }
 
-        public static async Task ShowWimInfoDialogAsync(string wimFilePath, string workingDirectory, CancellationToken cancellationToken)
+        private static bool TryGetValue(string line, string key, out string value)
         {
-            var wimInfoList = await GetWimInfoAsync(wimFilePath, cancellationToken);
-            if (wimInfoList == null || wimInfoList.Count == 0)
+            value = null;
+            int colon = line.IndexOf(':');
+            if (colon <= 0 || !string.Equals(line.Substring(0, colon).Trim(), key, StringComparison.OrdinalIgnoreCase))
             {
-                MessageBox.Show("No WIM images found.", "Error", AdonisUI.Controls.MessageBoxButton.OK, AdonisUI.Controls.MessageBoxImage.Error);
-                return;
+                return false;
+            }
+            value = line.Substring(colon + 1).Trim();
+            return true;
+        }
+
+        public static Task MountImageAsync(string imagePath, string mountPath, int index, bool optimize, CancellationToken cancellationToken)
+        {
+            Directory.CreateDirectory(mountPath);
+            string optimizeOption = optimize ? " /Optimize" : string.Empty;
+            return RunDismAsync(
+                $"/Mount-Image /ImageFile:\"{imagePath}\" /Index:{index} /MountDir:\"{mountPath}\"{optimizeOption}",
+                "Mount image",
+                cancellationToken);
+        }
+
+        public static Task UnmountImageAsync(string mountPath, bool commitChanges, CancellationToken cancellationToken)
+        {
+            string commitOption = commitChanges ? "/Commit" : "/Discard";
+            return RunDismAsync(
+                $"/Unmount-Image /MountDir:\"{mountPath}\" {commitOption}",
+                commitChanges ? "Unmount image (commit changes)" : "Unmount image (discard changes)",
+                cancellationToken);
+        }
+
+        public static Task CleanupMountpointsAsync(CancellationToken cancellationToken)
+        {
+            return RunDismAsync("/Cleanup-Mountpoints", "Clean up stale mount points", cancellationToken);
+        }
+
+        public static Task AddDriverAsync(string imagePath, string driverPath, bool recurse, string logPath, CancellationToken cancellationToken)
+        {
+            string recurseOption = recurse ? " /Recurse" : string.Empty;
+            string logOption = string.IsNullOrEmpty(logPath) ? string.Empty : $" /LogPath:\"{logPath}\"";
+            return RunDismAsync(
+                $"/Image:\"{imagePath}\" /Add-Driver /Driver:\"{driverPath}\"{recurseOption} /ForceUnsigned{logOption}",
+                "Add drivers",
+                cancellationToken);
+        }
+
+        public static async Task ExportImageAsync(string imagePath, string destinationPath, int index, CancellationToken cancellationToken)
+        {
+            // DISM appends to an existing destination WIM. A temp.wim left over from an aborted run
+            // would make the wrong edition end up at index 1.
+            FileUtils.DeleteFile(destinationPath);
+            await RunDismAsync(
+                $"/Export-Image /SourceImageFile:\"{imagePath}\" /SourceIndex:{index} /DestinationImageFile:\"{destinationPath}\"",
+                "Export edition",
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// If install.wim contains several editions, asks which one to keep and reduces the WIM to that
+        /// edition (so it is always index 1 afterwards). Returns the name of the kept edition.
+        /// </summary>
+        public static async Task<string> SelectEditionAsync(string wimFilePath, string tempWimPath, string preferredEdition, CancellationToken cancellationToken)
+        {
+            List<DismImageInfo> images = await GetWimInfoAsync(wimFilePath, cancellationToken).ConfigureAwait(false);
+            if (images.Count == 0)
+            {
+                throw new InvalidOperationException("No Windows editions were found in install.wim.");
             }
 
-            if (wimInfoList.Count == 1)
+            if (images.Count == 1)
             {
-                return;
+                Logger.Log($"Single edition image: {images[0].Name}");
+                return images[0].Name;
             }
 
+            DismImageInfo selected = null;
+            Application.Current.Dispatcher.Invoke(() => selected = ShowEditionDialog(images, preferredEdition));
+            if (selected == null)
+            {
+                Logger.Warn("No edition selected.");
+                throw new OperationCanceledException("Edition selection was canceled.");
+            }
+
+            Logger.Log($"Selected edition: {selected.Index}: {selected.Name}");
+            await ExportImageAsync(wimFilePath, tempWimPath, selected.Index, cancellationToken).ConfigureAwait(false);
+            FileUtils.DeleteFile(wimFilePath);
+            await FileUtils.MoveFileAsync(tempWimPath, wimFilePath).ConfigureAwait(false);
+            return selected.Name;
+        }
+
+        private static DismImageInfo ShowEditionDialog(List<DismImageInfo> images, string preferredEdition)
+        {
             var window = new AdonisWindow
             {
-                Title = "Select WIM Image",
-                Width = 300,
-                Height = 200,
+                Title = "Select Windows edition",
+                Width = 360,
                 Owner = Application.Current.MainWindow,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 ResizeMode = ResizeMode.NoResize,
-                WindowStyle = WindowStyle.ToolWindow,
+                ShowInTaskbar = false,
                 SizeToContent = SizeToContent.Height,
+            };
+
+            var label = new TextBlock
+            {
+                Text = "install.wim contains several editions. Choose the one to put on the new ISO:",
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(10, 10, 10, 0)
             };
 
             var comboBox = new ComboBox
             {
                 Margin = new Thickness(10),
-                DisplayMemberPath = "Name",
-                SelectedValuePath = "Index",
-                ItemsSource = wimInfoList,
-                SelectedIndex = 0
+                ItemsSource = images,
             };
 
-            var button = new Button
-            {
-                Content = "OK",
-                Margin = new Thickness(10),
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Width = 75
-            };
+            // Preselect the edition used last time, otherwise the last one (usually Ultimate).
+            DismImageInfo preselected = images.FirstOrDefault(i => string.Equals(i.Name, preferredEdition, StringComparison.OrdinalIgnoreCase))
+                ?? images.FirstOrDefault(i => i.Name.IndexOf("Ultimate", StringComparison.OrdinalIgnoreCase) >= 0)
+                ?? images.Last();
+            comboBox.SelectedItem = preselected;
 
-            button.Click += (sender, e) => window.DialogResult = true;
+            var okButton = new Button { Content = "OK", Width = 75, Margin = new Thickness(5, 5, 5, 10), IsDefault = true };
+            var cancelButton = new Button { Content = "Cancel", Width = 75, Margin = new Thickness(5, 5, 10, 10), IsCancel = true };
+            okButton.Click += (sender, e) => window.DialogResult = true;
 
-            var stackPanel = new StackPanel();
-            stackPanel.Children.Add(comboBox);
-            stackPanel.Children.Add(button);
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            buttons.Children.Add(okButton);
+            buttons.Children.Add(cancelButton);
 
-            window.Content = stackPanel;
+            var panel = new StackPanel();
+            panel.Children.Add(label);
+            panel.Children.Add(comboBox);
+            panel.Children.Add(buttons);
+            window.Content = panel;
 
-            if (window.ShowDialog() == true)
-            {
-                var selectedIndex = comboBox.SelectedValue?.ToString();
-                if (!string.IsNullOrEmpty(selectedIndex))
-                {
-                    var index = int.Parse(selectedIndex);
-                    var tempFilePath = Path.Combine(workingDirectory, "temp.wim");
-                    await ExtractImageAsync(wimFilePath, tempFilePath, index, cancellationToken);
-                    await FileUtils.DeleteFileAsync(wimFilePath);
-                    await FileUtils.MoveFileAsync(tempFilePath, wimFilePath);
-                }
-            }
-        }
-        public static void ExtractImage(string imagePath, string destinationPath, int index)
-        {
-            string arguments = $"/Export-Image /SourceImageFile:\"{imagePath}\" /SourceIndex:{index} /DestinationImageFile:\"{destinationPath}\"";
-            ExecuteDismCommand(arguments, "Extract Image");
-        }
-
-        public static async Task ExtractImageAsync(string imagePath, string destinationPath, int index, CancellationToken cancellationToken)
-        {
-            await Task.Run(() =>
-            {
-                if (!cancellationToken.IsCancellationRequested)
-                {
-                    ExtractImage(imagePath, destinationPath, index);
-                }
-            }, cancellationToken);
+            return window.ShowDialog() == true ? comboBox.SelectedItem as DismImageInfo : null;
         }
     }
 }
