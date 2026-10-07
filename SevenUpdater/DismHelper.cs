@@ -1,5 +1,4 @@
-﻿using AdonisUI.Controls;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -192,7 +191,7 @@ namespace SevenUpdater
 
         private static DismImageInfo ShowEditionDialog(List<DismImageInfo> images, string preferredEdition)
         {
-            var window = new AdonisWindow
+            var window = new ThemedWindow
             {
                 Title = "Select Windows edition",
                 Width = 360,
@@ -223,6 +222,7 @@ namespace SevenUpdater
             comboBox.SelectedItem = preselected;
 
             var okButton = new Button { Content = "OK", Width = 75, Margin = new Thickness(5, 5, 5, 10), IsDefault = true };
+            okButton.SetResourceReference(FrameworkElement.StyleProperty, "AccentButtonStyle");
             var cancelButton = new Button { Content = "Cancel", Width = 75, Margin = new Thickness(5, 5, 10, 10), IsCancel = true };
             okButton.Click += (sender, e) => window.DialogResult = true;
 

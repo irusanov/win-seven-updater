@@ -1,7 +1,7 @@
-﻿using AdonisUI.Controls;
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Windows;
 using System.Xml.Serialization;
 
 namespace SevenUpdater
@@ -270,7 +270,7 @@ namespace SevenUpdater
             if (loaded == null)
             {
                 // The reader is closed at this point, so the defaults can be written back.
-                MessageBox.Show(
+                ThemedMessageBox.Show(
                     "Invalid settings file!\nSettings will be reset to defaults.",
                     "Error",
                     MessageBoxButton.OK,
@@ -298,7 +298,7 @@ namespace SevenUpdater
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
+                ThemedMessageBox.Show(
                     "Could not save settings to file!\n" + ex.Message,
                     "Error",
                     MessageBoxButton.OK,

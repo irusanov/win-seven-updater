@@ -1,22 +1,18 @@
-﻿<adonisControls:AdonisWindow x:Class="SevenUpdater.MainWindow"
+﻿<local:ThemedWindow x:Class="SevenUpdater.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:adonisControls="clr-namespace:AdonisUI.Controls;assembly=AdonisUI"
-        xmlns:adonisExtensions="clr-namespace:AdonisUI.Extensions;assembly=AdonisUI"
-        xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
         xmlns:materialIcons="clr-namespace:Material.Icons.WPF;assembly=Material.Icons.WPF"
-        adonisExtensions:CursorSpotlightExtension.RelativeSpotlightSize="0"
         xmlns:local="clr-namespace:SevenUpdater"
         mc:Ignorable="d"
         BorderThickness="1"
         BorderBrush="{DynamicResource WindowBorderColor}"
-        Style="{DynamicResource WindowStyles}"
         UseLayoutRounding="True"
+        Icon="pack://application:,,,/Assets/Icon.ico"
         SizeToContent="Width"
         ResizeMode="CanMinimize"
-        Title="Seven Updater v1.0" Height="600" Width="862" Closing="AdonisWindow_Closing" Loaded="AdonisWindow_Loaded" Initialized="AdonisWindow_Initialized">
+        Title="Seven Updater v1.0" Height="600" Width="862" Closing="Window_Closing" Initialized="Window_Initialized">
     <Border x:Name="WindowContent" BorderThickness="0" Style="{DynamicResource PanelStyles}" Padding="5">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -39,7 +35,7 @@
                             ToolTip="Open the output directory in Explorer" />
                     <Button x:Name="ButtonCancel" Content="Cancel" Margin="5" Grid.Column="3" MinWidth="60" IsEnabled="False"
                             ToolTip="Stop the running operation. A mounted image is unmounted and its changes are discarded." />
-                    <Button x:Name="ButtonStart" Content="Start" Margin="5" Grid.Column="4" MinWidth="60" Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}"
+                    <Button x:Name="ButtonStart" Content="Start" Margin="5" Grid.Column="4" MinWidth="60" Style="{DynamicResource AccentButtonStyle}"
                             ToolTip="Build the Windows 7 ISO" />
                 </Grid>
 
@@ -160,4 +156,4 @@
             </Grid>
         </Grid>
     </Border>
-</adonisControls:AdonisWindow>
+</local:ThemedWindow>

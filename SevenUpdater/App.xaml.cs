@@ -31,7 +31,7 @@ namespace SevenUpdater
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
             Logger.Error("Unexpected error: " + e.Exception);
-            MessageBox.Show(
+            ThemedMessageBox.Show(
                 "An unexpected error occurred:\n" + Logger.Describe(e.Exception) + "\n\nDetails were written to output.log.",
                 "Seven Updater",
                 MessageBoxButton.OK,

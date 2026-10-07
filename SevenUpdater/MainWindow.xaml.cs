@@ -10,10 +10,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Shell;
-using AdonisMessageBox = AdonisUI.Controls.MessageBox;
-using AdonisMessageBoxButton = AdonisUI.Controls.MessageBoxButton;
-using AdonisMessageBoxImage = AdonisUI.Controls.MessageBoxImage;
-using AdonisMessageBoxResult = AdonisUI.Controls.MessageBoxResult;
 
 namespace SevenUpdater
 {
@@ -73,12 +69,12 @@ namespace SevenUpdater
                     long free = FileUtils.GetAvailableFreeSpace(path);
                     if (free >= 0 && free < RecommendedFreeSpaceBytes)
                     {
-                        AdonisMessageBoxResult answer = AdonisMessageBox.Show(
+                        MessageBoxResult answer = ThemedMessageBox.Show(
                             $"Only {FormatSize(free)} is free on this drive. About {FormatSize(RecommendedFreeSpaceBytes)} is recommended for the working directory.\n\nUse this folder anyway?",
                             AppTitle,
-                            AdonisMessageBoxButton.YesNo,
-                            AdonisMessageBoxImage.Warning);
-                        if (answer != AdonisMessageBoxResult.Yes)
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+                        if (answer != MessageBoxResult.Yes)
                         {
                             return;
                         }
@@ -477,11 +473,11 @@ namespace SevenUpdater
             {
                 case PipelineResult.Completed:
                     TextBlockStatus.Text = "Done: " + outputIsoPath;
-                    if (AdonisMessageBox.Show(
+                    if (ThemedMessageBox.Show(
                             $"The ISO was created successfully:\n{outputIsoPath}\n\nOpen the containing folder?",
                             AppTitle,
-                            AdonisMessageBoxButton.YesNo,
-                            AdonisMessageBoxImage.Information) == AdonisMessageBoxResult.Yes)
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information) == MessageBoxResult.Yes)
                     {
                         FileUtils.OpenFolderAndSelect(outputIsoPath);
                     }
@@ -809,12 +805,12 @@ namespace SevenUpdater
 
         private static bool Confirm(string message)
         {
-            return AdonisMessageBox.Show(message, AppTitle, AdonisMessageBoxButton.YesNo, AdonisMessageBoxImage.Question) == AdonisMessageBoxResult.Yes;
+            return ThemedMessageBox.Show(message, AppTitle, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
         }
 
         private static void ShowError(string message, string title = AppTitle)
         {
-            AdonisMessageBox.Show(message, title, AdonisMessageBoxButton.OK, AdonisMessageBoxImage.Error);
+            ThemedMessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void ExitApplication()
@@ -827,7 +823,7 @@ namespace SevenUpdater
 
         #region Window events
 
-        private void AdonisWindow_Closing(object sender, CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
             if (CommandQueue.IsRunning)
             {
@@ -867,11 +863,7 @@ namespace SevenUpdater
             }
         }
 
-        private void AdonisWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void AdonisWindow_Initialized(object sender, EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             if (_appSettings.WindowLeft == -1 || _appSettings.WindowTop == -1)
             {
